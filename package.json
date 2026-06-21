@@ -1,0 +1,32 @@
+{
+    "name": "wc-predictions-frontend",
+    "version": "1.0.0",
+    "description": "World Cup 2026 Predictions Frontend",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "lint": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^5.13.4",
+        "axios": "^1.6.2",
+        "luxon": "^3.4.4",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-hook-form": "^7.49.2",
+        "react-router-dom": "^6.21.0"
+    },
+    "devDependencies": {
+        "@types/luxon": "^3.3.7",
+        "@types/node": "^20.10.0",
+        "@types/react": "^18.2.45",
+        "@types/react-dom": "^18.2.18",
+        "@vitejs/plugin-react": "^4.2.1",
+        "autoprefixer": "^10.4.16",
+        "postcss": "^8.4.32",
+        "tailwindcss": "^3.4.0",
+        "typescript": "^5.3.2",
+        "vite": "^5.0.8"
+    }
+}

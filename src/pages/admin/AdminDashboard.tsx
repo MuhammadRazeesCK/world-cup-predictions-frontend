@@ -1,0 +1,619 @@
+import { useState, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { Header } from '../../components/Header';
+import { Button } from '../../components/common/Button';
+import { Alert } from '../../components/common/Alert';
+import { Modal } from '../../components/common/Modal';
+import { adminApi } from '../../api/admin';
+import { Fixture } from '../../types';
+import { formatKickoffIST, formatStageName } from '../../utils/timezone';
+
+// Common timezone offsets for WC 2026 host cities + India
+const TIMEZONES = [
+  { label: 'IST – India (UTC+5:30)',          value: '+05:30' },
+  { label: 'EST – New York / USA East (UTC-5)', value: '-05:00' },
+  { label: 'CST – Chicago / USA Central (UTC-6)', value: '-06:00' },
+  { label: 'MST – Denver / USA Mountain (UTC-7)', value: '-07:00' },
+  { label: 'PST – Los Angeles / USA West (UTC-8)', value: '-08:00' },
+  { label: 'EDT – New York Daylight (UTC-4)',    value: '-04:00' },
+  { label: 'CDT – Chicago Daylight (UTC-5)',     value: '-05:00' },
+  { label: 'MDT – Denver Daylight (UTC-6)',      value: '-06:00' },
+  { label: 'PDT – LA Daylight (UTC-7)',          value: '-07:00' },
+  { label: 'GMT – London (UTC+0)',               value: '+00:00' },
+  { label: 'CET – Europe (UTC+1)',               value: '+01:00' },
+];
+
+/** Converts a datetime-local string + tz offset into ISO 8601 with offset */
+function toISO(datetimeLocal: string, offset: string): string {
+  if (!datetimeLocal) return '';
+  return `${datetimeLocal}:00${offset}`;
+}
+
+const STAGES = ['group', 'round16', 'qf', 'sf', 'final'];
+
+interface FixtureForm {
+  match_number: number;
+  home_team: string;
+  away_team: string;
+  kickoff_date: string;   // datetime-local value
+  kickoff_tz: string;     // timezone offset e.g. +05:30
+  stage: string;
+}
+
+function UploadSection() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [result, setResult] = useState<{ uploaded: number; total: number; errors: string[] } | null>(null);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => adminApi.bulkUpload(file).then((r) => r.data),
+    onSuccess: (data) => {
+      setResult(data);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.error || 'Upload failed');
+    },
+  });
+
+  const handleFile = (file: File) => {
+    if (!file.name.endsWith('.csv')) {
+      setError('Please upload a .csv file');
+      return;
+    }
+    setError('');
+    setResult(null);
+    uploadMutation.mutate(file);
+  };
+
+  return (
+    <div className="card space-y-4">
+      <h2 className="font-semibold text-text-primary">📤 Bulk Upload Fixtures (CSV)</h2>
+
+      <div className="text-text-secondary text-xs">
+        CSV format: <code className="bg-slate-800 px-1 rounded">match_number,home_team,away_team,kickoff_time,stage</code>
+      </div>
+
+      <div
+        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+          isDragging ? 'border-accent bg-accent/10' : 'border-slate-600 hover:border-slate-500'
+        }`}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          const file = e.dataTransfer.files[0];
+          if (file) handleFile(file);
+        }}
+        onClick={() => fileInputRef.current?.click()}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="text-4xl mb-2">📁</div>
+        <p className="text-text-secondary text-sm">Drag & drop CSV or <span className="text-accent">browse</span></p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
+        />
+      </div>
+
+      {uploadMutation.isPending && <div className="text-text-secondary text-sm text-center">Uploading...</div>}
+      {error && <Alert type="error" message={error} onDismiss={() => setError('')} />}
+      {result && (
+        <div>
+          <Alert
+            type={result.errors.length === 0 ? 'success' : 'warning'}
+            message={`Uploaded ${result.uploaded} of ${result.total} fixtures. ${result.errors.length > 0 ? `${result.errors.length} errors.` : ''}`}
+          />
+          {result.errors.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {result.errors.map((e, i) => (
+                <li key={i} className="text-danger text-xs">• {e}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreateFixtureForm() {
+  const queryClient = useQueryClient();
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<FixtureForm>({
+    defaultValues: { kickoff_tz: '+05:30' },
+  });
+  const kickoffDate = watch('kickoff_date');
+  const kickoffTz = watch('kickoff_tz');
+
+  const mutation = useMutation({
+    mutationFn: (data: FixtureForm) => adminApi.createFixture({
+      ...data,
+      match_number: Number(data.match_number),
+      kickoff_time: toISO(data.kickoff_date, data.kickoff_tz),
+    }),
+    onSuccess: () => {
+      setSuccess('Fixture created successfully!');
+      reset();
+      queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.error || 'Failed to create fixture');
+    },
+  });
+
+  return (
+    <div className="card space-y-4">
+      <h2 className="font-semibold text-text-primary">➕ Add Fixture Manually</h2>
+
+      {success && <Alert type="success" message={success} />}
+      {error && <Alert type="error" message={error} onDismiss={() => setError('')} />}
+
+      <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Match #</label>
+            <input type="number" min={1} max={64} className="input" {...register('match_number', { required: true, min: 1, max: 64 })} />
+          </div>
+          <div>
+            <label className="label">Stage</label>
+            <select className="input" {...register('stage', { required: true })}>
+              {STAGES.map((s) => <option key={s} value={s}>{formatStageName(s)}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Home Team</label>
+            <input type="text" className="input" placeholder="Brazil" {...register('home_team', { required: true })} />
+          </div>
+          <div>
+            <label className="label">Away Team</label>
+            <input type="text" className="input" placeholder="Argentina" {...register('away_team', { required: true })} />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Kickoff Date &amp; Time</label>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="datetime-local"
+              className="input flex-1"
+              style={{ colorScheme: 'dark', minWidth: '13rem' }}
+              {...register('kickoff_date', { required: 'Kickoff date is required' })}
+            />
+            <select className="input" style={{ maxWidth: '14rem' }} {...register('kickoff_tz', { required: true })}>
+              {TIMEZONES.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
+          </div>
+          {errors.kickoff_date && <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{errors.kickoff_date.message}</p>}
+          {kickoffDate && (
+            <p className="text-xs mt-1" style={{ color: '#6b89b4' }}>
+              Stored as: <code style={{ color: '#f5b800' }}>{toISO(kickoffDate, kickoffTz)}</code>
+            </p>
+          )}
+        </div>
+
+        <Button type="submit" isLoading={mutation.isPending} fullWidth>
+          Create Fixture
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function FixtureList() {
+  const queryClient = useQueryClient();
+  const [editFixture, setEditFixture] = useState<(Fixture & { prediction_count: number }) | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'fixtures'],
+    queryFn: () => adminApi.getFixtures().then((r) => r.data),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteFixture(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+      setDeleteId(null);
+      setAlert({ type: 'success', message: 'Fixture deleted' });
+    },
+    onError: (err: any) => {
+      setAlert({ type: 'error', message: err.response?.data?.error || 'Delete failed' });
+    },
+  });
+
+  const statusColors: Record<string, string> = {
+    scheduled: 'bg-blue-900/50 text-blue-300',
+    live: 'bg-success/20 text-success',
+    completed: 'bg-slate-700 text-slate-400',
+  };
+
+  return (
+    <div className="card space-y-3">
+      <h2 className="font-semibold text-text-primary">📋 All Fixtures ({data?.length ?? 0})</h2>
+
+      {alert && <Alert type={alert.type} message={alert.message} onDismiss={() => setAlert(null)} />}
+
+      {isLoading && <div className="text-text-secondary text-sm">Loading...</div>}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-text-secondary text-xs uppercase border-b border-slate-700">
+              <th className="pb-2 text-left">#</th>
+              <th className="pb-2 text-left">Match</th>
+              <th className="pb-2 text-left">Kickoff</th>
+              <th className="pb-2 text-left">Stage</th>
+              <th className="pb-2 text-left">Status</th>
+              <th className="pb-2 text-right">Preds</th>
+              <th className="pb-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/50">
+            {data?.map((f) => (
+              <tr key={f.id} className="hover:bg-slate-700/20">
+                <td className="py-2 text-text-secondary">{f.match_number}</td>
+                <td className="py-2 text-text-primary font-medium">{f.home_team} vs {f.away_team}</td>
+                <td className="py-2 text-text-secondary text-xs">{formatKickoffIST(f.kickoff_time)}</td>
+                <td className="py-2"><span className="badge bg-slate-700 text-slate-300">{f.stage}</span></td>
+                <td className="py-2"><span className={`badge ${statusColors[f.status]}`}>{f.status}</span></td>
+                <td className="py-2 text-right text-text-secondary">{f.prediction_count}</td>
+                <td className="py-2 text-right">
+                  <button onClick={() => setEditFixture(f)} className="text-accent hover:underline text-xs mr-2">Edit</button>
+                  {f.status === 'scheduled' && (
+                    <button onClick={() => setDeleteId(f.id)} className="text-danger hover:underline text-xs">Del</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Delete confirmation */}
+      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Fixture" size="sm">
+        <p className="text-text-secondary mb-4">Are you sure? This will also delete all predictions for this fixture.</p>
+        <div className="flex gap-2">
+          <Button variant="danger" onClick={() => deleteId && deleteMutation.mutate(deleteId)} isLoading={deleteMutation.isPending}>
+            Delete
+          </Button>
+          <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
+        </div>
+      </Modal>
+
+      {/* Edit modal */}
+      {editFixture && (
+        <EditFixtureModal
+          fixture={editFixture}
+          onClose={() => setEditFixture(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+            setEditFixture(null);
+            setAlert({ type: 'success', message: 'Fixture updated' });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditFixtureModal({ fixture, onClose, onSuccess }: {
+  fixture: Fixture;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [error, setError] = useState('');
+  const { register, handleSubmit } = useForm({
+    defaultValues: {
+      home_team: fixture.home_team,
+      away_team: fixture.away_team,
+      stage: fixture.stage,
+      status: fixture.status,
+      home_score: fixture.home_score ?? '',
+      away_score: fixture.away_score ?? '',
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => adminApi.updateFixture(fixture.id, data),
+    onSuccess,
+    onError: (err: any) => setError(err.response?.data?.error || 'Update failed'),
+  });
+
+  return (
+    <Modal isOpen onClose={onClose} title={`Edit Match #${fixture.match_number}`}>
+      {error && <Alert type="error" message={error} onDismiss={() => setError('')} />}
+      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-3 mt-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Home Team</label>
+            <input className="input" {...register('home_team', { required: true })} />
+          </div>
+          <div>
+            <label className="label">Away Team</label>
+            <input className="input" {...register('away_team', { required: true })} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Stage</label>
+            <select className="input" {...register('stage')}>
+              {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Status</label>
+            <select className="input" {...register('status')}>
+              {['scheduled', 'live', 'completed'].map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Home Score</label>
+            <input type="number" min={0} className="input" {...register('home_score')} />
+          </div>
+          <div>
+            <label className="label">Away Score</label>
+            <input type="number" min={0} className="input" {...register('away_score')} />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" isLoading={mutation.isPending}>Save Changes</Button>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function UserManagement() {
+  const queryClient = useQueryClient();
+  const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.getUsers().then((r) => r.data),
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) => adminApi.resetPassword(id, password),
+    onSuccess: () => {
+      setResetTarget(null);
+      setNewPassword('');
+      setAlert({ type: 'success', message: 'Password reset successfully. User sessions revoked.' });
+    },
+    onError: (err: any) => setAlert({ type: 'error', message: err.response?.data?.error || 'Reset failed' }),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="card space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-text-primary">👥 Users ({users?.length ?? 0})</h2>
+          <button onClick={() => setCreateOpen(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide"
+            style={{ background: '#f5b800', color: '#020c1f' }}>
+            + Add User
+          </button>
+        </div>
+
+        {alert && <Alert type={alert.type} message={alert.message} onDismiss={() => setAlert(null)} />}
+        {isLoading && <div className="text-text-secondary text-sm">Loading...</div>}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-text-secondary text-xs uppercase border-b border-slate-700">
+                <th className="pb-2 text-left">Username</th>
+                <th className="pb-2 text-left">Email</th>
+                <th className="pb-2 text-left">Role</th>
+                <th className="pb-2 text-left">Status</th>
+                <th className="pb-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {users?.map((u) => (
+                <tr key={u.id} className="hover:bg-slate-700/20">
+                  <td className="py-2 font-medium text-text-primary">@{u.username}</td>
+                  <td className="py-2 text-text-secondary text-xs">{u.email}</td>
+                  <td className="py-2">
+                    <span className="badge text-xs px-2 py-0.5 rounded"
+                      style={u.role === 'admin'
+                        ? { background: 'rgba(245,158,11,0.2)', color: '#f59e0b' }
+                        : { background: 'rgba(22,163,74,0.15)', color: '#4ade80' }}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="py-2">
+                    <span className="badge text-xs" style={u.is_active
+                      ? { color: '#4ade80' } : { color: '#f87171' }}>
+                      {u.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="py-2 text-right">
+                    <button onClick={() => { setResetTarget({ id: u.id, username: u.username }); setNewPassword(''); }}
+                      className="text-xs font-bold hover:underline" style={{ color: '#f5b800' }}>
+                      Reset PW
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Reset password modal */}
+      <Modal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} title={`Reset Password — @${resetTarget?.username}`} size="sm">
+        <div className="space-y-3 mt-2">
+          <div>
+            <label className="label">New Password</label>
+            <input type="password" className="input" placeholder="Min 8 characters"
+              value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => resetTarget && resetMutation.mutate({ id: resetTarget.id, password: newPassword })}
+              isLoading={resetMutation.isPending} disabled={newPassword.length < 8}>
+              Reset Password
+            </Button>
+            <Button variant="secondary" onClick={() => setResetTarget(null)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create user modal */}
+      {createOpen && <CreateUserModal onClose={() => setCreateOpen(false)} onSuccess={() => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+        setCreateOpen(false);
+        setAlert({ type: 'success', message: 'User created successfully' });
+      }} />}
+    </div>
+  );
+}
+
+function CreateUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [error, setError] = useState('');
+  const { register, handleSubmit, formState: { errors } } = useForm<{
+    email: string; username: string; password: string; role: string;
+  }>({ defaultValues: { role: 'user' } });
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => adminApi.createUser(data),
+    onSuccess,
+    onError: (err: any) => setError(err.response?.data?.error || 'Failed to create user'),
+  });
+
+  return (
+    <Modal isOpen onClose={onClose} title="Add New User">
+      {error && <Alert type="error" message={error} onDismiss={() => setError('')} />}
+      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-3 mt-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Email</label>
+            <input type="email" className="input" placeholder="user@example.com"
+              {...register('email', { required: 'Required' })} />
+            {errors.email && <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{errors.email.message}</p>}
+          </div>
+          <div>
+            <label className="label">Username</label>
+            <input type="text" className="input" placeholder="player_name"
+              {...register('username', { required: 'Required', pattern: { value: /^[a-zA-Z0-9_]{3,50}$/, message: 'Alphanumeric/underscore, 3-50 chars' } })} />
+            {errors.username && <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{errors.username.message}</p>}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Password</label>
+            <input type="password" className="input" placeholder="Min 8 chars"
+              {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 chars' } })} />
+            {errors.password && <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{errors.password.message}</p>}
+          </div>
+          <div>
+            <label className="label">Role</label>
+            <select className="input" {...register('role')}>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" isLoading={mutation.isPending}>Create User</Button>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function AdminLogs() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'logs'],
+    queryFn: () => adminApi.getLogs({ limit: 50 }).then((r) => r.data),
+    staleTime: 30 * 1000,
+  });
+
+  return (
+    <div className="card space-y-3">
+      <h2 className="font-semibold text-text-primary">📜 Admin Activity Log</h2>
+      {isLoading && <div className="text-text-secondary text-sm">Loading...</div>}
+      <div className="space-y-2 max-h-72 overflow-y-auto">
+        {data?.map((log) => (
+          <div key={log.id} className="text-xs bg-slate-800 rounded p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-accent font-medium">{log.action}</span>
+              <span className="text-text-secondary">{new Date(log.created_at).toLocaleString()}</span>
+            </div>
+            <div className="text-text-secondary">{log.admin_email}</div>
+            <div className="text-slate-500 font-mono text-xs mt-1 truncate">{JSON.stringify(log.details)}</div>
+          </div>
+        ))}
+        {data?.length === 0 && <p className="text-text-secondary text-sm">No logs yet</p>}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'logs'>('upload');
+
+  const tabs = [
+    { key: 'upload', label: '📤 Upload CSV' },
+    { key: 'create', label: '➕ Add Fixture' },
+    { key: 'fixtures', label: '📋 Manage' },
+    { key: 'users', label: '👥 Users' },
+    { key: 'logs', label: '📜 Logs' },
+  ] as const;
+
+  return (
+    <div className="min-h-screen pb-6">
+      <Header />
+
+      <main className="max-w-3xl mx-auto px-4 py-4 space-y-4">
+        <div>
+          <h1 className="text-xl font-bold text-text-primary">⚙ Admin Dashboard</h1>
+          <p className="text-text-secondary text-sm">Manage World Cup fixtures</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.key ? 'bg-accent text-white' : 'bg-surface text-text-secondary border border-slate-700 hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'upload' && <UploadSection />}
+        {activeTab === 'create' && <CreateFixtureForm />}
+        {activeTab === 'fixtures' && <FixtureList />}
+        {activeTab === 'users' && <UserManagement />}
+        {activeTab === 'logs' && <AdminLogs />}
+      </main>
+    </div>
+  );
+}
