@@ -1,12 +1,39 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { AvailableFixture } from '../types';
 import { formatKickoffIST, formatStageName, getCountdownParts } from '../utils/timezone';
 import { useSubmitPrediction } from '../hooks/usePredictions';
 import { useAuth } from '../context/AuthContext';
+import { getTeamFlag } from '../utils/teams';
 
 interface MatchCardProps { fixture: AvailableFixture; }
 interface PredictionForm { home: number; away: number; }
+
+function resultLabel(home: number, away: number, homeTeam: string, awayTeam: string) {
+  if (home > away) return { text: `${homeTeam} Win`, color: '#4ade80' };
+  if (away > home) return { text: `${awayTeam} Win`, color: '#f87171' };
+  return { text: 'Draw', color: '#fbbf24' };
+}
+
+function GoalStepper({ value, onChange, disabled }: { value: number; onChange: (v: number) => void; disabled?: boolean }) {
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" disabled={disabled || value <= 0}
+        onClick={() => onChange(Math.max(0, value - 1))}
+        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        −
+      </button>
+      <span className="font-black text-3xl tabular-nums min-w-[1.8ch] text-center" style={{ color: '#f5b800' }}>{value}</span>
+      <button type="button" disabled={disabled || value >= 10}
+        onClick={() => onChange(Math.min(10, value + 1))}
+        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        +
+      </button>
+    </div>
+  );
+}
 
 const stageStyle: Record<string, { bg: string; text: string }> = {
   group:   { bg: 'rgba(22,163,74,0.2)',  text: '#4ade80' },
@@ -34,12 +61,15 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const submitMutation = useSubmitPrediction();
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<PredictionForm>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<PredictionForm>({
     defaultValues: {
       home: userPred?.predicted_home_goals ?? 0,
       away: userPred?.predicted_away_goals ?? 0,
     },
   });
+
+  const homeVal = useWatch({ control, name: 'home' });
+  const awayVal = useWatch({ control, name: 'away' });
 
   const onSubmit = async (data: PredictionForm) => {
     setMsg(null);
@@ -55,6 +85,9 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const stg = stageStyle[fixture.stage] || stageStyle.group;
   const isLive = status === 'live';
   const isCompleted = status === 'completed';
+
+  const homeFlag = getTeamFlag(fixture.home_team);
+  const awayFlag = getTeamFlag(fixture.away_team);
 
   return (
     <div className="rounded-xl overflow-hidden" style={{
@@ -82,6 +115,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
       <div className="px-4 py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 text-right">
+            {homeFlag && <div className="text-3xl mb-1">{homeFlag}</div>}
             <div className="font-black text-base sm:text-lg uppercase tracking-wide" style={{ color: '#eef2ff' }}>{fixture.home_team}</div>
           </div>
           <div className="flex items-center gap-1 mx-2">
@@ -98,9 +132,22 @@ export function MatchCard({ fixture }: MatchCardProps) {
             )}
           </div>
           <div className="flex-1 text-left">
+            {awayFlag && <div className="text-3xl mb-1">{awayFlag}</div>}
             <div className="font-black text-base sm:text-lg uppercase tracking-wide" style={{ color: '#eef2ff' }}>{fixture.away_team}</div>
           </div>
         </div>
+        {/* Result indicator for completed/live matches */}
+        {(isCompleted || isLive) && fixture.home_score !== null && fixture.away_score !== null && (() => {
+          const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team);
+          return (
+            <div className="text-center mt-2">
+              <span className="text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.3)', color: r.color, border: `1px solid ${r.color}40` }}>
+                {r.text}
+              </span>
+            </div>
+          );
+        })()}
         {!isCompleted && !isLive && (
           <div className="text-center mt-2">
             <span className="text-xs" style={{ color: '#3d5a80' }}>{formatKickoffIST(fixture.kickoff_time)}</span>
@@ -112,26 +159,35 @@ export function MatchCard({ fixture }: MatchCardProps) {
       {!isAdmin && (
       <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(26,58,107,0.6)' }}>
         <div className="pt-3">
-          {pw.is_open ? (
+          {pw.is_open && !isLive ? (
             <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="flex items-end gap-3 justify-center mb-3">
+              <div className="flex items-center gap-3 justify-center mb-2">
                 <div className="text-center">
-                  <div className="text-[10px] font-bold uppercase mb-1 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>{fixture.home_team}</div>
-                  <input type="number" min={0} max={10}
-                    className="w-16 h-14 text-center text-3xl font-black rounded-lg tabular-nums"
-                    style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(245,184,0,0.3)', color: '#f5b800', outline: 'none', WebkitAppearance: 'none' }}
-                    {...register('home', { required: true, min: 0, max: 10, valueAsNumber: true })} />
+                  <div className="text-[10px] font-bold uppercase mb-2 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>
+                    {homeFlag} {fixture.home_team}
+                  </div>
+                  <GoalStepper value={homeVal ?? 0} onChange={(v) => setValue('home', v)} />
                 </div>
-                <div className="pb-3 font-black text-2xl" style={{ color: '#3d5a80' }}>-</div>
+                <div className="pb-1 font-black text-2xl" style={{ color: '#3d5a80' }}>-</div>
                 <div className="text-center">
-                  <div className="text-[10px] font-bold uppercase mb-1 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>{fixture.away_team}</div>
-                  <input type="number" min={0} max={10}
-                    className="w-16 h-14 text-center text-3xl font-black rounded-lg tabular-nums"
-                    style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(245,184,0,0.3)', color: '#f5b800', outline: 'none', WebkitAppearance: 'none' }}
-                    {...register('away', { required: true, min: 0, max: 10, valueAsNumber: true })} />
+                  <div className="text-[10px] font-bold uppercase mb-2 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>
+                    {awayFlag} {fixture.away_team}
+                  </div>
+                  <GoalStepper value={awayVal ?? 0} onChange={(v) => setValue('away', v)} />
                 </div>
               </div>
-              {(errors.home || errors.away) && <p className="text-center text-xs mb-2" style={{ color: '#dc2626' }}>Goals must be 0-10</p>}
+              {/* Live result preview */}
+              {(() => {
+                const r = resultLabel(homeVal ?? 0, awayVal ?? 0, fixture.home_team, fixture.away_team);
+                return (
+                  <div className="text-center mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(0,0,0,0.3)', color: r.color, border: `1px solid ${r.color}30` }}>
+                      {r.text}
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="flex items-center justify-between">
                 <Countdown closesAt={fixture.prediction_closes_at} />
                 <button type="submit" disabled={submitMutation.isPending}

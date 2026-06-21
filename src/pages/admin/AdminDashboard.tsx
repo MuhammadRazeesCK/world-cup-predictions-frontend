@@ -8,6 +8,7 @@ import { Modal } from '../../components/common/Modal';
 import { adminApi } from '../../api/admin';
 import { Fixture } from '../../types';
 import { formatKickoffIST, formatStageName } from '../../utils/timezone';
+import { SORTED_TEAMS, getTeamFlag } from '../../utils/teams';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -175,11 +176,21 @@ function CreateFixtureForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Home Team</label>
-            <input type="text" className="input" placeholder="Brazil" {...register('home_team', { required: true })} />
+            <select className="input" {...register('home_team', { required: true })}>
+              <option value="">Select team...</option>
+              {SORTED_TEAMS.map((t) => (
+                <option key={t.code} value={t.name}>{t.flag} {t.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">Away Team</label>
-            <input type="text" className="input" placeholder="Argentina" {...register('away_team', { required: true })} />
+            <select className="input" {...register('away_team', { required: true })}>
+              <option value="">Select team...</option>
+              {SORTED_TEAMS.map((t) => (
+                <option key={t.code} value={t.name}>{t.flag} {t.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -268,7 +279,9 @@ function FixtureList() {
             {data?.map((f) => (
               <tr key={f.id} className="hover:bg-slate-700/20">
                 <td className="py-2 text-text-secondary">{f.match_number}</td>
-                <td className="py-2 text-text-primary font-medium">{f.home_team} vs {f.away_team}</td>
+                <td className="py-2 text-text-primary font-medium">
+                  {getTeamFlag(f.home_team)} {f.home_team} vs {getTeamFlag(f.away_team)} {f.away_team}
+                </td>
                 <td className="py-2 text-text-secondary text-xs">{formatKickoffIST(f.kickoff_time)}</td>
                 <td className="py-2"><span className="badge bg-slate-700 text-slate-300">{f.stage}</span></td>
                 <td className="py-2"><span className={`badge ${statusColors[f.status]}`}>{f.status}</span></td>
@@ -312,28 +325,57 @@ function FixtureList() {
   );
 }
 
+function ScoreStepper({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+  const val = value ?? 0;
+  return (
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={() => onChange(Math.max(0, val - 1))}
+        className="w-9 h-9 rounded-lg font-black text-xl flex items-center justify-center transition-all active:scale-90"
+        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        −
+      </button>
+      <span className="font-black text-2xl tabular-nums min-w-[1.5ch] text-center" style={{ color: '#f5b800' }}>{val}</span>
+      <button type="button" onClick={() => onChange(Math.min(20, val + 1))}
+        className="w-9 h-9 rounded-lg font-black text-xl flex items-center justify-center transition-all active:scale-90"
+        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        +
+      </button>
+    </div>
+  );
+}
+
 function EditFixtureModal({ fixture, onClose, onSuccess }: {
   fixture: Fixture;
   onClose: () => void;
   onSuccess: () => void;
 }) {
   const [error, setError] = useState('');
+  const [homeScore, setHomeScore] = useState<number>(fixture.home_score ?? 0);
+  const [awayScore, setAwayScore] = useState<number>(fixture.away_score ?? 0);
   const { register, handleSubmit } = useForm({
     defaultValues: {
       home_team: fixture.home_team,
       away_team: fixture.away_team,
       stage: fixture.stage,
       status: fixture.status,
-      home_score: fixture.home_score ?? '',
-      away_score: fixture.away_score ?? '',
     },
   });
 
   const mutation = useMutation({
-    mutationFn: (data: any) => adminApi.updateFixture(fixture.id, data),
+    mutationFn: (data: any) => adminApi.updateFixture(fixture.id, {
+      ...data,
+      home_score: homeScore,
+      away_score: awayScore,
+    }),
     onSuccess,
     onError: (err: any) => setError(err.response?.data?.error || 'Update failed'),
   });
+
+  // result indicator
+  const resultColor = homeScore > awayScore ? '#4ade80' : awayScore > homeScore ? '#f87171' : '#fbbf24';
+  const resultText = homeScore > awayScore
+    ? `${fixture.home_team} Win`
+    : awayScore > homeScore ? `${fixture.away_team} Win` : 'Draw';
 
   return (
     <Modal isOpen onClose={onClose} title={`Edit Match #${fixture.match_number}`}>
@@ -342,11 +384,19 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Home Team</label>
-            <input className="input" {...register('home_team', { required: true })} />
+            <select className="input" {...register('home_team', { required: true })}>
+              {SORTED_TEAMS.map((t) => (
+                <option key={t.code} value={t.name}>{t.flag} {t.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">Away Team</label>
-            <input className="input" {...register('away_team', { required: true })} />
+            <select className="input" {...register('away_team', { required: true })}>
+              {SORTED_TEAMS.map((t) => (
+                <option key={t.code} value={t.name}>{t.flag} {t.name}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -363,14 +413,28 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Home Score</label>
-            <input type="number" min={0} className="input" {...register('home_score')} />
-          </div>
-          <div>
-            <label className="label">Away Score</label>
-            <input type="number" min={0} className="input" {...register('away_score')} />
+        <div>
+          <label className="label">Score</label>
+          <div className="flex items-center gap-4 mt-1">
+            <div className="text-center">
+              <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>
+                {getTeamFlag(fixture.home_team)} {fixture.home_team}
+              </div>
+              <ScoreStepper value={homeScore} onChange={setHomeScore} />
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-black text-2xl" style={{ color: '#3d5a80' }}>-</span>
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                style={{ color: resultColor, background: 'rgba(0,0,0,0.3)', border: `1px solid ${resultColor}30` }}>
+                {resultText}
+              </span>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>
+                {getTeamFlag(fixture.away_team)} {fixture.away_team}
+              </div>
+              <ScoreStepper value={awayScore} onChange={setAwayScore} />
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
