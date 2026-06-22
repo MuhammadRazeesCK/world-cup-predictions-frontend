@@ -636,14 +636,145 @@ function AdminLogs() {
   );
 }
 
+function AllPredictions() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'predictions'],
+    queryFn: () => adminApi.getPredictions().then((r) => r.data),
+    staleTime: 30 * 1000,
+  });
+
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const resultBadge = (result: string | null) => {
+    if (!result) return <span className="text-slate-500 text-xs">–</span>;
+    const map: Record<string, { label: string; cls: string }> = {
+      exact:  { label: '🎯 Exact',  cls: 'bg-green-900 text-green-300' },
+      winner: { label: '✅ Winner', cls: 'bg-blue-900 text-blue-300' },
+      wrong:  { label: '❌ Wrong',  cls: 'bg-red-900 text-red-300' },
+    };
+    const b = map[result] ?? { label: result, cls: 'bg-slate-700 text-slate-300' };
+    return <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${b.cls}`}>{b.label}</span>;
+  };
+
+  if (isLoading) return <div className="card text-text-secondary text-sm">Loading predictions…</div>;
+
+  const groups = data ?? [];
+  const totalPredictions = groups.reduce((s, g) => s + g.predictions.length, 0);
+  const fixturesWithPredictions = groups.filter((g) => g.predictions.length > 0).length;
+
+  return (
+    <div className="space-y-3">
+      {/* Summary */}
+      <div className="card flex gap-6 text-sm">
+        <div>
+          <div className="text-text-secondary text-xs">Fixtures with predictions</div>
+          <div className="text-text-primary font-bold text-lg">{fixturesWithPredictions}</div>
+        </div>
+        <div>
+          <div className="text-text-secondary text-xs">Total predictions</div>
+          <div className="text-text-primary font-bold text-lg">{totalPredictions}</div>
+        </div>
+      </div>
+
+      {groups.length === 0 && (
+        <div className="card text-text-secondary text-sm">No predictions submitted yet.</div>
+      )}
+
+      {groups.map(({ fixture: f, predictions }) => {
+        const isOpen = expanded.has(f.id);
+        const statusColors: Record<string, string> = {
+          scheduled: 'text-blue-400',
+          live: 'text-green-400',
+          completed: 'text-slate-400',
+        };
+        const scoreDisplay =
+          f.home_score !== null && f.away_score !== null
+            ? `${f.home_score}–${f.away_score}`
+            : 'TBD';
+
+        return (
+          <div key={f.id} className="card overflow-hidden p-0">
+            {/* Fixture header — always visible, click to expand */}
+            <button
+              className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-slate-800 transition-colors"
+              onClick={() => toggleExpanded(f.id)}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-text-secondary text-xs shrink-0">M{f.match_number}</span>
+                <span className="text-text-primary font-medium text-sm truncate">
+                  {getTeamFlag(f.home_team)} {f.home_team} vs {getTeamFlag(f.away_team)} {f.away_team}
+                </span>
+                <span className={`text-xs font-medium shrink-0 ${statusColors[f.status] ?? 'text-slate-400'}`}>
+                  {f.status === 'completed' ? scoreDisplay : f.status.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <span className="text-xs text-text-secondary">{predictions.length} prediction{predictions.length !== 1 ? 's' : ''}</span>
+                <span className="text-text-secondary text-xs">{isOpen ? '▲' : '▼'}</span>
+              </div>
+            </button>
+
+            {/* Predictions table */}
+            {isOpen && (
+              <div className="border-t border-slate-700">
+                {predictions.length === 0 ? (
+                  <p className="px-4 py-3 text-text-secondary text-sm">No predictions yet.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-800 text-text-secondary text-xs">
+                        <th className="text-left px-4 py-2">Player</th>
+                        <th className="text-center px-3 py-2">Prediction</th>
+                        <th className="text-center px-3 py-2">Result</th>
+                        <th className="text-center px-3 py-2">Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {predictions.map((p) => (
+                        <tr key={p.id} className="border-t border-slate-700/50 hover:bg-slate-800/40">
+                          <td className="px-4 py-2 text-text-primary font-medium">{p.username}</td>
+                          <td className="px-3 py-2 text-center font-mono text-text-primary">
+                            {p.home_goals}–{p.away_goals}
+                          </td>
+                          <td className="px-3 py-2 text-center">{resultBadge(p.result)}</td>
+                          <td className="px-3 py-2 text-center">
+                            {p.points !== null ? (
+                              <span className={`font-bold ${p.points >= 8 ? 'text-green-400' : p.points >= 3 ? 'text-blue-400' : 'text-slate-400'}`}>
+                                {p.points}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-xs">–</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'logs'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'logs'>('upload');
 
   const tabs = [
     { key: 'upload', label: '📤 Upload CSV' },
     { key: 'create', label: '➕ Add Fixture' },
     { key: 'fixtures', label: '📋 Manage' },
     { key: 'users', label: '👥 Users' },
+    { key: 'predictions', label: '🔮 Predictions' },
     { key: 'logs', label: '📜 Logs' },
   ] as const;
 
@@ -676,6 +807,7 @@ export default function AdminDashboard() {
         {activeTab === 'create' && <CreateFixtureForm />}
         {activeTab === 'fixtures' && <FixtureList />}
         {activeTab === 'users' && <UserManagement />}
+        {activeTab === 'predictions' && <AllPredictions />}
         {activeTab === 'logs' && <AdminLogs />}
       </main>
     </div>
