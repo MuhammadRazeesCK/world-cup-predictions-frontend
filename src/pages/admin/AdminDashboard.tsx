@@ -249,6 +249,19 @@ function FixtureList() {
     },
   });
 
+  const rescoreMutation = useMutation({
+    mutationFn: (id: string) => adminApi.rescore(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'predictions'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      setAlert({ type: 'success', message: 'Predictions rescored and leaderboard updated!' });
+    },
+    onError: (err: any) => {
+      setAlert({ type: 'error', message: err.response?.data?.error || 'Rescore failed' });
+    },
+  });
+
   const statusColors: Record<string, string> = {
     scheduled: 'bg-blue-900/50 text-blue-300',
     live: 'bg-success/20 text-success',
@@ -289,6 +302,16 @@ function FixtureList() {
                 <td className="py-2 text-right text-text-secondary">{f.prediction_count}</td>
                 <td className="py-2 text-right">
                   <button onClick={() => setEditFixture(f)} className="text-accent hover:underline text-xs mr-2">Edit</button>
+                  {f.status === 'completed' && (
+                    <button
+                      onClick={() => rescoreMutation.mutate(f.id)}
+                      disabled={rescoreMutation.isPending}
+                      className="text-xs mr-2 hover:underline"
+                      style={{ color: '#22c55e' }}
+                    >
+                      {rescoreMutation.isPending ? '…' : 'Rescore'}
+                    </button>
+                  )}
                   {f.status === 'scheduled' && (
                     <button onClick={() => setDeleteId(f.id)} className="text-danger hover:underline text-xs">Del</button>
                   )}
@@ -317,6 +340,8 @@ function FixtureList() {
           onClose={() => setEditFixture(null)}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'predictions'] });
+            queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
             setEditFixture(null);
             setAlert({ type: 'success', message: 'Fixture updated' });
           }}

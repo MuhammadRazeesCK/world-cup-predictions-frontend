@@ -102,4 +102,9 @@ export const adminApi = {
         const { data } = await apiClient.get('/admin/predictions');
         return data;
     },
+
+    rescore: async (id: string): Promise<{ success: boolean; data?: { updated: number } }> => {
+        const { data } = await apiClient.post(`/admin/fixtures/${id}/rescore`);
+        return data;
+    },
 };
