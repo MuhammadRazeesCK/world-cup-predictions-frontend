@@ -9,6 +9,7 @@ import { adminApi } from '../../api/admin';
 import { Fixture } from '../../types';
 import { formatKickoffIST, formatStageName } from '../../utils/timezone';
 import { SORTED_TEAMS, TeamFlag } from '../../utils/teams';
+import { ExportTab } from '../../components/export/ExportTab';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -767,7 +768,7 @@ function AllPredictions() {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'logs'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'logs'>('upload');
 
   const tabs = [
     { key: 'upload', label: '📤 Upload CSV' },
@@ -775,6 +776,7 @@ export default function AdminDashboard() {
     { key: 'fixtures', label: '📋 Manage' },
     { key: 'users', label: '👥 Users' },
     { key: 'predictions', label: '🔮 Predictions' },
+    { key: 'export', label: '📸 Export' },
     { key: 'logs', label: '📜 Logs' },
   ] as const;
 
@@ -808,6 +810,7 @@ export default function AdminDashboard() {
         {activeTab === 'fixtures' && <FixtureList />}
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'predictions' && <AllPredictions />}
+        {activeTab === 'export' && <ExportTab />}
         {activeTab === 'logs' && <AdminLogs />}
       </main>
     </div>
