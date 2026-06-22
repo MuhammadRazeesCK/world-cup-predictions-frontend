@@ -2,6 +2,7 @@
     "name": "wc-predictions-frontend",
     "version": "1.0.0",
     "description": "World Cup 2026 Predictions Frontend",
+    "engines": { "node": "22.x" },
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
