@@ -76,4 +76,30 @@ export const adminApi = {
         const { data } = await apiClient.post(`/admin/users/${userId}/reset-password`, { password });
         return data;
     },
+
+    getPredictions: async (): Promise<ApiResponse<Array<{
+        fixture: {
+            id: string;
+            match_number: number;
+            home_team: string;
+            away_team: string;
+            kickoff_time: string;
+            stage: string;
+            status: string;
+            home_score: number | null;
+            away_score: number | null;
+        };
+        predictions: Array<{
+            id: string;
+            username: string;
+            home_goals: number;
+            away_goals: number;
+            result: string | null;
+            points: number | null;
+            predicted_at: string;
+        }>;
+    }>>> => {
+        const { data } = await apiClient.get('/admin/predictions');
+        return data;
+    },
 };
