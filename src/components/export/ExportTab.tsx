@@ -197,7 +197,12 @@ function StandingsCard({ cardRef, entries }: { cardRef: React.RefObject<HTMLDivE
   const podium = entries.length >= 3
     ? [{ e:entries[1], slot:1 }, { e:entries[0], slot:0 }, { e:entries[2], slot:2 }]
     : [];
-  const podH = [110, 148, 86];
+  // slot 0=1st(centre), slot 1=2nd(left), slot 2=3rd(right)
+  const podH   = [200, 140, 100];   // bar heights: 1st tallest, clear gap to 2nd, 3rd shortest
+  const avSize = [80,  58,  44];    // avatar diameters
+  const nameSz = [16,  13,  11];    // name font sizes
+  const ptsSz  = [34,  22,  18];    // points font sizes
+  const medalSz= [32,  24,  20];    // medal emoji sizes
   return (
     <div ref={cardRef} style={CARD_BASE}>
       <div style={TOP_STRIPE} />
@@ -207,23 +212,45 @@ function StandingsCard({ cardRef, entries }: { cardRef: React.RefObject<HTMLDivE
         <div style={{ fontSize:10, color:D.textMuted, marginTop:10, letterSpacing:'0.1em', textTransform:'uppercase' }}>{entries.length} Players · {fmtDate()}</div>
       </div>
       {podium.length > 0 && (
-        <div style={{ padding:'32px 40px 0', display:'flex', justifyContent:'center', alignItems:'flex-end', gap:12, borderBottom:`1px solid ${D.border}`, backgroundImage:D.dots }}>
+        <div style={{ padding:'40px 40px 0', display:'flex', justifyContent:'center', alignItems:'flex-end', gap:8, borderBottom:`1px solid ${D.border}`, backgroundImage:D.dots, background:'linear-gradient(180deg, rgba(245,197,24,0.03) 0%, transparent 60%)' }}>
           {podium.map(({ e, slot }) => {
             const ac = [D.rank2, D.rank1, D.rank3][slot];
             const [from, to] = pal(e.username);
-            const av = slot===0 ? 64 : 50;
+            const av = avSize[slot];
+            const is1st = slot === 0;
             return (
-              <div key={e.user_id} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, maxWidth:190 }}>
-                <div style={{ width:av, height:av, borderRadius:'50%', background:`linear-gradient(135deg,${from},${to})`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:av*0.4, color:'#fff', border:`3px solid ${ac}`, boxShadow:`0 0 24px ${ac}50`, marginBottom:10 }}>
+              <div key={e.user_id} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex: is1st ? 1.4 : 1 }}>
+                {/* Avatar with ring — 1st gets extra glow */}
+                <div style={{
+                  width:av, height:av, borderRadius:'50%',
+                  background:`linear-gradient(135deg,${from},${to})`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontWeight:900, fontSize:av*0.38, color:'#fff',
+                  border:`${is1st ? 4 : 3}px solid ${ac}`,
+                  boxShadow: is1st ? `0 0 0 4px ${ac}28, 0 0 36px ${ac}70` : `0 0 16px ${ac}50`,
+                  marginBottom:10,
+                }}>
                   {e.username.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ fontSize:slot===0?28:22, lineHeight:1, marginBottom:6 }}>{medals[slot]}</div>
-                <div style={{ fontSize:slot===0?15:12, fontWeight:700, color:ac, textAlign:'center', marginBottom:4, letterSpacing:'0.02em', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.username}</div>
-                <div style={{ fontSize:slot===0?30:22, fontWeight:900, color:ac, fontFamily:'ui-monospace,"SF Mono",monospace', letterSpacing:'-0.02em', marginBottom:12 }}>
-                  {e.total_points}<span style={{ fontSize:11, fontWeight:600, color:D.textMuted, marginLeft:4 }}>pts</span>
+                {/* Medal */}
+                <div style={{ fontSize:medalSz[slot], lineHeight:1, marginBottom:7 }}>{medals[slot]}</div>
+                {/* Name */}
+                <div style={{ fontSize:nameSz[slot], fontWeight:700, color:ac, textAlign:'center', marginBottom:5, letterSpacing:'0.02em', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {e.username}
                 </div>
-                <div style={{ width:'100%', height:podH[slot], background:`linear-gradient(180deg,${ac}28 0%,${ac}0a 100%)`, borderRadius:'8px 8px 0 0', border:`1px solid ${ac}38`, borderBottom:'none', display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:10 }}>
-                  <span style={{ fontSize:12, fontWeight:800, color:ac, opacity:0.5, letterSpacing:'0.08em' }}>#{slot+1}</span>
+                {/* Points */}
+                <div style={{ fontSize:ptsSz[slot], fontWeight:900, color:ac, fontFamily:'ui-monospace,"SF Mono",monospace', letterSpacing:'-0.02em', marginBottom:14, lineHeight:1 }}>
+                  {e.total_points}<span style={{ fontSize:ptsSz[slot]*0.38, fontWeight:600, color:D.textMuted, marginLeft:4 }}>pts</span>
+                </div>
+                {/* Podium bar */}
+                <div style={{
+                  width:'100%', height:podH[slot],
+                  background:`linear-gradient(180deg,${ac}${is1st?'38':'22'} 0%,${ac}06 100%)`,
+                  borderRadius:'10px 10px 0 0',
+                  border:`1px solid ${ac}${is1st?'50':'30'}`, borderBottom:'none',
+                  display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:12,
+                }}>
+                  <span style={{ fontSize:is1st?16:12, fontWeight:900, color:ac, opacity:is1st?0.7:0.4, letterSpacing:'0.1em' }}>#{slot+1}</span>
                 </div>
               </div>
             );
