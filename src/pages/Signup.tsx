@@ -5,11 +5,26 @@ import { useAuth } from '../context/AuthContext';
 
 interface SignupForm { email: string; username: string; password: string; confirmPassword: string; }
 
+function EyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95M9.88 9.88A3 3 0 0114.12 14.12M3 3l18 18" />
+    </svg>
+  );
+}
+
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<SignupForm>();
   const password = watch('password');
 
@@ -55,21 +70,33 @@ export default function Signup() {
               </div>
               <div>
                 <label className="label">Password</label>
-                <input type="password" autoComplete="new-password" className="input" placeholder="Min 8 chars, uppercase, number, special"
-                  {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 characters' },
-                    validate: v => {
-                      if (!/[A-Z]/.test(v)) return 'Need 1 uppercase';
-                      if (!/\d/.test(v)) return 'Need 1 number';
-                      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(v)) return 'Need 1 special char';
-                      return true;
-                    }
-                  })} />
+                <div className="relative">
+                  <input type={showPw ? 'text' : 'password'} autoComplete="new-password" className="input pr-10" placeholder="Min 8 chars, uppercase, number, special"
+                    {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 characters' },
+                      validate: v => {
+                        if (!/[A-Z]/.test(v)) return 'Need 1 uppercase';
+                        if (!/\d/.test(v)) return 'Need 1 number';
+                        if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(v)) return 'Need 1 special char';
+                        return true;
+                      }
+                    })} />
+                  <button type="button" tabIndex={-1} onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors">
+                    <EyeIcon open={showPw} />
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.password.message}</p>}
               </div>
               <div>
                 <label className="label">Confirm Password</label>
-                <input type="password" autoComplete="new-password" className="input" placeholder="Repeat password"
-                  {...register('confirmPassword', { required: 'Required', validate: v => v === password || 'Passwords do not match' })} />
+                <div className="relative">
+                  <input type={showConfirm ? 'text' : 'password'} autoComplete="new-password" className="input pr-10" placeholder="Repeat password"
+                    {...register('confirmPassword', { required: 'Required', validate: v => v === password || 'Passwords do not match' })} />
+                  <button type="button" tabIndex={-1} onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors">
+                    <EyeIcon open={showConfirm} />
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.confirmPassword.message}</p>}
               </div>
               <button type="submit" disabled={loading}

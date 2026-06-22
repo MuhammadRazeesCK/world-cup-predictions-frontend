@@ -8,7 +8,7 @@ import { Modal } from '../../components/common/Modal';
 import { adminApi } from '../../api/admin';
 import { Fixture } from '../../types';
 import { formatKickoffIST, formatStageName } from '../../utils/timezone';
-import { SORTED_TEAMS, getTeamFlag } from '../../utils/teams';
+import { SORTED_TEAMS, TeamFlag } from '../../utils/teams';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -280,7 +280,7 @@ function FixtureList() {
               <tr key={f.id} className="hover:bg-slate-700/20">
                 <td className="py-2 text-text-secondary">{f.match_number}</td>
                 <td className="py-2 text-text-primary font-medium">
-                  {getTeamFlag(f.home_team)} {f.home_team} vs {getTeamFlag(f.away_team)} {f.away_team}
+                  <TeamFlag name={f.home_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.home_team} vs <TeamFlag name={f.away_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.away_team}
                 </td>
                 <td className="py-2 text-text-secondary text-xs">{formatKickoffIST(f.kickoff_time)}</td>
                 <td className="py-2"><span className="badge bg-slate-700 text-slate-300">{f.stage}</span></td>
@@ -418,7 +418,7 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
           <div className="flex items-center gap-4 mt-1">
             <div className="text-center">
               <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>
-                {getTeamFlag(fixture.home_team)} {fixture.home_team}
+                <TeamFlag name={fixture.home_team} className="w-6 h-4 rounded-sm inline-block mr-1" />{fixture.home_team}
               </div>
               <ScoreStepper value={homeScore} onChange={setHomeScore} />
             </div>
@@ -431,7 +431,7 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
             </div>
             <div className="text-center">
               <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>
-                {getTeamFlag(fixture.away_team)} {fixture.away_team}
+                <TeamFlag name={fixture.away_team} className="w-6 h-4 rounded-sm inline-block mr-1" />{fixture.away_team}
               </div>
               <ScoreStepper value={awayScore} onChange={setAwayScore} />
             </div>
@@ -708,7 +708,7 @@ function AllPredictions() {
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-text-secondary text-xs shrink-0">M{f.match_number}</span>
                 <span className="text-text-primary font-medium text-sm truncate">
-                  {getTeamFlag(f.home_team)} {f.home_team} vs {getTeamFlag(f.away_team)} {f.away_team}
+                  <TeamFlag name={f.home_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.home_team} vs <TeamFlag name={f.away_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.away_team}
                 </span>
                 <span className={`text-xs font-medium shrink-0 ${statusColors[f.status] ?? 'text-slate-400'}`}>
                   {f.status === 'completed' ? scoreDisplay : f.status.toUpperCase()}

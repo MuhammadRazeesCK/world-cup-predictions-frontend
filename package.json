@@ -2,7 +2,9 @@
     "name": "wc-predictions-frontend",
     "version": "1.0.0",
     "description": "World Cup 2026 Predictions Frontend",
-    "engines": { "node": "22.x" },
+    "engines": {
+        "node": "22.x"
+    },
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
@@ -12,6 +14,7 @@
     "dependencies": {
         "@tanstack/react-query": "^5.13.4",
         "axios": "^1.6.2",
+        "country-flag-icons": "^1.6.18",
         "luxon": "^3.4.4",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
