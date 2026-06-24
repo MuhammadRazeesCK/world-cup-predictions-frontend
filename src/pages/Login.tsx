@@ -60,7 +60,7 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Email */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>

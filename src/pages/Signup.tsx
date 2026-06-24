@@ -107,7 +107,7 @@ export default function Signup() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <AuthInput
           label="Email"
           type="email"
