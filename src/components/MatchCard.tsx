@@ -15,20 +15,39 @@ function resultLabel(home: number, away: number, homeTeam: string, awayTeam: str
   return { text: 'Draw', color: '#fbbf24' };
 }
 
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 inline-block" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
 function GoalStepper({ value, onChange, disabled }: { value: number; onChange: (v: number) => void; disabled?: boolean }) {
   return (
-    <div className="flex items-center gap-1">
-      <button type="button" disabled={disabled || value <= 0}
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        disabled={disabled || value <= 0}
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
-        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-25"
+        style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+      >
         −
       </button>
-      <span className="font-black text-3xl tabular-nums min-w-[1.8ch] text-center" style={{ color: '#f5b800' }}>{value}</span>
-      <button type="button" disabled={disabled || value >= 10}
+      <span
+        className="tabular-nums min-w-[2ch] text-center"
+        style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2rem', color: '#f5b800', lineHeight: 1, letterSpacing: '0.02em' }}
+      >
+        {value}
+      </span>
+      <button
+        type="button"
+        disabled={disabled || value >= 10}
         onClick={() => onChange(Math.min(10, value + 1))}
-        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
-        style={{ background: 'rgba(255,255,255,0.08)', color: '#eef2ff', border: '1px solid rgba(255,255,255,0.1)' }}>
+        className="w-8 h-8 rounded-lg font-black text-lg flex items-center justify-center transition-all active:scale-90 disabled:opacity-25"
+        style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+      >
         +
       </button>
     </div>
@@ -36,11 +55,11 @@ function GoalStepper({ value, onChange, disabled }: { value: number; onChange: (
 }
 
 const stageStyle: Record<string, { bg: string; text: string }> = {
-  group:   { bg: 'rgba(22,163,74,0.2)',  text: '#4ade80' },
-  round16: { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa' },
-  qf:      { bg: 'rgba(245,158,11,0.2)', text: '#fbbf24' },
-  sf:      { bg: 'rgba(239,68,68,0.2)',  text: '#f87171' },
-  final:   { bg: 'rgba(245,184,0,0.25)', text: '#f5b800' },
+  group:   { bg: 'rgba(22,163,74,0.15)',  text: '#4ade80' },
+  round16: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
+  qf:      { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24' },
+  sf:      { bg: 'rgba(239,68,68,0.15)',  text: '#f87171' },
+  final:   { bg: 'rgba(245,184,0,0.18)',  text: '#f5b800' },
 };
 
 function Countdown({ closesAt }: { closesAt: string }) {
@@ -51,7 +70,11 @@ function Countdown({ closesAt }: { closesAt: string }) {
   }, [closesAt]);
   if (parts.expired) return null;
   const display = parts.hours > 0 ? `${parts.hours}h ${parts.minutes}m` : `${parts.minutes}m ${parts.seconds}s`;
-  return <span className="font-mono text-xs font-bold" style={{ color: '#f5b800' }}>&#9201; {display}</span>;
+  return (
+    <span className="flex items-center gap-1 text-xs font-bold" style={{ color: '#f5b800' }}>
+      <ClockIcon /> {display}
+    </span>
+  );
 }
 
 export function MatchCard({ fixture }: MatchCardProps) {
@@ -87,78 +110,98 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isCompleted = status === 'completed';
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{
-      background: 'linear-gradient(135deg,#071428 0%,#0d1f3c 100%)',
-      border: isLive ? '1px solid rgba(22,163,74,0.5)' : '1px solid rgba(26,58,107,0.8)',
-      boxShadow: isLive ? '0 0 20px rgba(22,163,74,0.1)' : '0 4px 24px rgba(0,0,0,0.4)',
-    }}>
-
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: '#111111',
+        border: isLive ? '1px solid rgba(22,163,74,0.4)' : '1px solid rgba(255,255,255,0.07)',
+        boxShadow: isLive ? '0 0 20px rgba(22,163,74,0.08)' : 'none',
+      }}
+    >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2" style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(26,58,107,0.6)' }}>
+      <div
+        className="flex items-center justify-between px-4 py-2"
+        style={{ background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+      >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold rounded px-1.5 py-0.5" style={{ background: stg.bg, color: stg.text }}>
-            {formatStageName(fixture.stage).toUpperCase()}
+          <span className="text-[10px] font-bold rounded-md px-2 py-0.5 uppercase tracking-wide" style={{ background: stg.bg, color: stg.text }}>
+            {formatStageName(fixture.stage)}
           </span>
-          <span className="text-xs" style={{ color: '#3d5a80' }}>Match #{fixture.match_number}</span>
+          <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            #{fixture.match_number}
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
-          {isLive && <><span className="live-dot" /><span className="text-xs font-bold uppercase" style={{ color: '#16a34a' }}>Live</span></>}
-          {!isLive && !isCompleted && <span className="text-xs" style={{ color: '#3d5a80' }}>{formatKickoffIST(fixture.kickoff_time)}</span>}
-          {isCompleted && <span className="text-xs font-bold uppercase" style={{ color: '#3d5a80' }}>Full Time</span>}
+          {isLive && (
+            <><span className="live-dot" /><span className="text-[10px] font-black uppercase tracking-wide" style={{ color: '#16a34a' }}>Live</span></>
+          )}
+          {!isLive && !isCompleted && (
+            <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              {formatKickoffIST(fixture.kickoff_time)}
+            </span>
+          )}
+          {isCompleted && (
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              Full Time
+            </span>
+          )}
         </div>
       </div>
 
       {/* Teams + Score */}
-      <div className="px-4 py-5">
+      <div className="px-4 py-3.5">
         <div className="flex items-center justify-center gap-3">
 
-          {/* Home team — centered column */}
-          <div className="flex flex-col items-center gap-1.5" style={{ width: '38%' }}>
-            <TeamFlag name={fixture.home_team} className="w-12 h-8 rounded-md shadow-md" />
-            <div className="font-black text-sm sm:text-base uppercase tracking-wide text-center leading-tight" style={{ color: '#eef2ff' }}>
+          {/* Home */}
+          <div className="flex flex-col items-center gap-2" style={{ width: '38%' }}>
+            <TeamFlag name={fixture.home_team} className="w-12 h-8 rounded-md shadow-lg" />
+            <div className="font-black text-xs uppercase tracking-wide text-center leading-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>
               {fixture.home_team}
             </div>
           </div>
 
           {/* Score / VS */}
-          <div className="flex flex-col items-center gap-1 shrink-0" style={{ width: '24%' }}>
+          <div className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: '24%' }}>
             {(isCompleted || isLive) && fixture.home_score !== null ? (
               <>
                 <div className="flex items-center gap-1">
-                  <span className="font-black text-3xl sm:text-4xl tabular-nums w-8 text-center"
-                    style={{ color: isCompleted ? '#f5b800' : '#16a34a', textShadow: isCompleted ? '0 0 20px rgba(245,184,0,0.4)' : 'none' }}>
+                  <span
+                    className="tabular-nums w-8 text-center"
+                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.9rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
+                  >
                     {fixture.home_score}
                   </span>
-                  <span className="font-black text-xl" style={{ color: '#3d5a80' }}>:</span>
-                  <span className="font-black text-3xl sm:text-4xl tabular-nums w-8 text-center"
-                    style={{ color: isCompleted ? '#f5b800' : '#16a34a', textShadow: isCompleted ? '0 0 20px rgba(245,184,0,0.4)' : 'none' }}>
+                  <span className="font-black text-base" style={{ color: 'rgba(255,255,255,0.2)' }}>:</span>
+                  <span
+                    className="tabular-nums w-8 text-center"
+                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.9rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
+                  >
                     {fixture.away_score}
                   </span>
                 </div>
                 {(() => {
                   const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team);
                   return (
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-center"
-                      style={{ background: 'rgba(0,0,0,0.35)', color: r.color, border: `1px solid ${r.color}50` }}>
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-center"
+                      style={{ background: `${r.color}18`, color: r.color, border: `1px solid ${r.color}40` }}>
                       {r.text}
                     </span>
                   );
                 })()}
               </>
             ) : (
-              <div className="flex flex-col items-center gap-1">
-                <div className="px-3 py-1.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(26,58,107,0.8)' }}>
-                  <span className="font-black text-sm uppercase tracking-widest" style={{ color: '#3d5a80' }}>VS</span>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.1rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>VS</span>
                 </div>
-                <span className="text-[10px] text-center" style={{ color: '#3d5a80' }}>{formatKickoffIST(fixture.kickoff_time)}</span>
               </div>
             )}
           </div>
 
-          {/* Away team — centered column */}
-          <div className="flex flex-col items-center gap-1.5" style={{ width: '38%' }}>
-            <TeamFlag name={fixture.away_team} className="w-12 h-8 rounded-md shadow-md" />
-            <div className="font-black text-sm sm:text-base uppercase tracking-wide text-center leading-tight" style={{ color: '#eef2ff' }}>
+          {/* Away */}
+          <div className="flex flex-col items-center gap-2" style={{ width: '38%' }}>
+            <TeamFlag name={fixture.away_team} className="w-12 h-8 rounded-md shadow-lg" />
+            <div className="font-black text-xs uppercase tracking-wide text-center leading-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>
               {fixture.away_team}
             </div>
           </div>
@@ -166,68 +209,78 @@ export function MatchCard({ fixture }: MatchCardProps) {
         </div>
       </div>
 
-      {/* Prediction zone — hidden for admins */}
+      {/* Prediction zone */}
       {!isAdmin && (
-      <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(26,58,107,0.6)' }}>
-        <div className="pt-3">
-          {pw.is_open && !isLive ? (
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="flex items-center gap-3 justify-center mb-2">
-                <div className="text-center">
-                  <div className="text-[10px] font-bold uppercase mb-2 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>
-                    <TeamFlag name={fixture.home_team} className="w-4 h-3 rounded-sm inline-block mr-0.5" /> {fixture.home_team}
-                  </div>
+        <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="pt-3">
+            {pw.is_open && !isLive ? (
+              <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Stepper row */}
+                <div className="flex items-center justify-center gap-5 mb-3">
                   <GoalStepper value={homeVal ?? 0} onChange={(v) => setValue('home', v)} />
-                </div>
-                <div className="pb-1 font-black text-2xl" style={{ color: '#3d5a80' }}>-</div>
-                <div className="text-center">
-                  <div className="text-[10px] font-bold uppercase mb-2 truncate max-w-[80px]" style={{ color: '#6b89b4' }}>
-                    <TeamFlag name={fixture.away_team} className="w-4 h-3 rounded-sm inline-block mr-0.5" /> {fixture.away_team}
-                  </div>
+                  <span className="font-black text-lg" style={{ color: 'rgba(255,255,255,0.15)', lineHeight: 1 }}>–</span>
                   <GoalStepper value={awayVal ?? 0} onChange={(v) => setValue('away', v)} />
                 </div>
-              </div>
-              {/* Live result preview */}
-              {(() => {
-                const r = resultLabel(homeVal ?? 0, awayVal ?? 0, fixture.home_team, fixture.away_team);
-                return (
-                  <div className="text-center mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(0,0,0,0.3)', color: r.color, border: `1px solid ${r.color}30` }}>
-                      {r.text}
-                    </span>
-                  </div>
-                );
-              })()}
-              <div className="flex items-center justify-between">
-                <Countdown closesAt={fixture.prediction_closes_at} />
-                <button type="submit" disabled={submitMutation.isPending}
-                  className="px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wide transition-all disabled:opacity-40 active:scale-95"
-                  style={{ background: '#f5b800', color: '#020c1f' }}>
-                  {submitMutation.isPending ? '...' : userPred ? '✏️ Update Prediction' : '⚽ Submit Prediction'}
-                </button>
-              </div>
-              {msg && <div className="mt-2 text-center text-xs font-bold" style={{ color: msg.type === 'ok' ? '#16a34a' : '#dc2626' }}>{msg.text}</div>}
-            </form>
-          ) : userPred ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-bold uppercase mb-1" style={{ color: '#3d5a80' }}>Your Prediction</div>
-                <div className="font-black text-2xl tabular-nums" style={{ color: '#6b89b4' }}>
-                  {userPred.predicted_home_goals} - {userPred.predicted_away_goals}
+
+                {/* Result preview pill */}
+                {(() => {
+                  const r = resultLabel(homeVal ?? 0, awayVal ?? 0, fixture.home_team, fixture.away_team);
+                  return (
+                    <div className="text-center mb-3">
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                        style={{ background: `${r.color}15`, color: r.color, border: `1px solid ${r.color}35` }}>
+                        {r.text}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Submit row */}
+                <div className="flex items-center justify-between gap-3">
+                  <Countdown closesAt={fixture.prediction_closes_at} />
+                  <button
+                    type="submit"
+                    disabled={submitMutation.isPending}
+                    className="px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40 active:scale-95"
+                    style={{ background: '#f5b800', color: '#0a0a0a' }}
+                  >
+                    {submitMutation.isPending ? 'Saving…' : userPred ? 'Update' : 'Submit'}
+                  </button>
                 </div>
+                {msg && (
+                  <div className="mt-2 text-center text-xs font-bold tracking-wide" style={{ color: msg.type === 'ok' ? '#4ade80' : '#f87171' }}>
+                    {msg.text}
+                  </div>
+                )}
+              </form>
+            ) : userPred ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    Your Prediction
+                  </div>
+                  <div className="font-black tabular-nums" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1 }}>
+                    {userPred.predicted_home_goals} – {userPred.predicted_away_goals}
+                  </div>
+                </div>
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  Closed
+                </span>
               </div>
-              <span className="text-[10px] font-bold px-2 py-1 rounded" style={{ background: 'rgba(220,38,38,0.15)', color: '#f87171', border: '1px solid rgba(220,38,38,0.3)' }}>CLOSED</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-xs italic" style={{ color: '#3d5a80' }}>No prediction made</span>
-              <span className="text-[10px] font-bold px-2 py-1 rounded" style={{ background: 'rgba(220,38,38,0.15)', color: '#f87171', border: '1px solid rgba(220,38,38,0.3)' }}>CLOSED</span>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  No prediction made
+                </span>
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  Closed
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
     </div>
   );
 }
+

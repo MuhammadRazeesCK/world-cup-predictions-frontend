@@ -50,6 +50,12 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; marg
   animation: flagScroll 28s linear infinite;
 }
 .auth-flags-track:hover { animation-play-state: paused; }
+
+@keyframes pendingPulse {
+  0%, 100% { border-left-color: rgba(255,255,255,0.15); }
+  50%       { border-left-color: rgba(255,255,255,0.45); }
+}
+
 input[type="number"] { -moz-appearance: textfield; }
 
 /*  Components  */
