@@ -29,6 +29,16 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; marg
 
 .auth-input:focus { border-color: #f5b800 !important; }
 
+/* Override browser autofill background (can't be overridden any other way) */
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 20, 20, 0.95) inset !important;
+  -webkit-text-fill-color: white !important;
+  caret-color: white;
+}
+
 /* Infinite scrolling flags marquee */
 @keyframes flagScroll {
   0%   { transform: translateX(0); }
