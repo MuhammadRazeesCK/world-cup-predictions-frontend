@@ -18,6 +18,28 @@ body {
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Auth page animations ───────────────────────────────────────────────── */
+@keyframes authBallFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg);   }
+  33%       { transform: translateY(-12px) rotate(8deg); }
+  66%       { transform: translateY(-6px)  rotate(-5deg);}
+}
+.auth-ball { animation: authBallFloat 5s ease-in-out infinite; display: inline-block; }
+
+.auth-input:focus { border-color: #f5b800 !important; }
+
+/* Infinite scrolling flags marquee */
+@keyframes flagScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.auth-flags-track {
+  display: flex;
+  width: max-content;
+  animation: flagScroll 28s linear infinite;
+}
+.auth-flags-track:hover { animation-play-state: paused; }
 input[type="number"] { -moz-appearance: textfield; }
 
 /*  Components  */

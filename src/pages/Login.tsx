@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { AUTH_THEME as T } from '../styles/authTheme';
 
 interface LoginForm { email: string; password: string; }
 
@@ -34,59 +36,105 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style={{ background: 'rgba(245,184,0,0.1)', border: '2px solid rgba(245,184,0,0.3)' }}>
-            <span className="text-3xl">⚽</span>
-          </div>
-          <div className="font-black text-2xl text-text-primary uppercase tracking-tight">World Cup 2026</div>
-          <div className="text-xs font-bold uppercase tracking-widest mt-1" style={{ color: '#f5b800' }}>Predictions League</div>
-        </div>
-
-        <div className="rounded-xl overflow-hidden" style={{ background: '#071428', border: '1px solid rgba(26,58,107,0.8)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <div className="h-1" style={{ background: 'linear-gradient(90deg,#f5b800,#16a34a,#3b82f6,#f5b800)' }} />
-          <div className="px-6 py-6">
-            <h2 className="font-black text-lg text-text-primary uppercase mb-5">Sign In</h2>
-
-            {error && (
-              <div className="mb-4 px-3 py-2 rounded-lg text-xs font-bold" style={{ background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171' }}>{error}</div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="label">Email</label>
-                <input type="email" autoComplete="email" className="input" placeholder="you@example.com"
-                  {...register('email', { required: 'Email is required' })} />
-                {errors.email && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.email.message}</p>}
-              </div>
-              <div>
-                <label className="label">Password</label>
-                <div className="relative">
-                  <input type={showPw ? 'text' : 'password'} autoComplete="current-password" className="input pr-10" placeholder="••••••••"
-                    {...register('password', { required: 'Password is required' })} />
-                  <button type="button" tabIndex={-1} onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors">
-                    <EyeIcon open={showPw} />
-                  </button>
-                </div>
-                {errors.password && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.password.message}</p>}
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-lg font-black text-sm uppercase tracking-wide transition-all disabled:opacity-40 active:scale-95"
-                style={{ background: '#f5b800', color: '#020c1f' }}>
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
-
-            <p className="text-center text-xs mt-5" style={{ color: '#3d5a80' }}>
-              No account?{' '}
-              <Link to="/signup" className="font-bold transition-colors" style={{ color: '#f5b800' }}>Create one</Link>
-            </p>
-          </div>
-        </div>
+    <AuthLayout>
+      {/* Logo mark */}
+      <div className="mb-8">
+        <h2
+          className="font-black uppercase tracking-tight text-white"
+          style={{ fontSize: '2rem', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}
+        >
+          Welcome Back
+        </h2>
+        <p className="text-sm mt-1 font-semibold" style={{ color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>
+          Your league is waiting.
+        </p>
       </div>
-    </div>
+
+      {/* Error banner */}
+      {error && (
+        <div
+          className="mb-5 px-4 py-3 rounded-lg text-sm font-semibold"
+          style={{ background: 'rgba(239,68,68,0.12)', border: `1px solid rgba(239,68,68,0.3)`, color: '#fca5a5' }}
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Email */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            Email
+          </label>
+          <input
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className="auth-input w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-[rgba(255,255,255,0.3)] outline-none transition-all"
+            style={{
+              background: T.inputBg,
+              border: `1px solid ${T.borderColor}`,
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+            }}
+          />
+          {errors.email && <p className="text-xs mt-1.5 font-semibold" style={{ color: T.danger }}>{errors.email.message}</p>}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPw ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className="auth-input w-full px-4 py-3 pr-11 rounded-xl text-sm font-medium text-white placeholder-[rgba(255,255,255,0.3)] outline-none transition-all"
+              style={{
+                background: T.inputBg,
+                border: `1px solid ${T.borderColor}`,
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+              }}
+              {...register('password', { required: 'Password is required' })}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPw(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+              style={{ color: 'rgba(238,242,255,0.35)' }}
+            >
+              <EyeIcon open={showPw} />
+            </button>
+          </div>
+          {errors.password && <p className="text-xs mt-1.5 font-semibold" style={{ color: T.danger }}>{errors.password.message}</p>}
+        </div>
+
+        {/* CTA */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-widest transition-all disabled:opacity-40 active:scale-[0.98] mt-2"
+          style={{ background: T.gold, color: '#020c1f', boxShadow: `0 4px 24px rgba(245,184,0,0.25)` }}
+        >
+          {loading ? 'Signing in…' : 'Sign In'}
+        </button>
+      </form>
+
+      {/* Footer link */}
+      <p className="text-center text-sm mt-7" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        No account?{' '}
+        <Link
+          to="/signup"
+          className="font-bold transition-colors hover:opacity-80"
+          style={{ color: T.gold }}
+        >
+          Join the league
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

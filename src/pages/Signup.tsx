@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { AUTH_THEME as T } from '../styles/authTheme';
 
 interface SignupForm { email: string; username: string; password: string; confirmPassword: string; }
 
@@ -15,6 +17,51 @@ function EyeIcon({ open }: { open: boolean }) {
     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95M9.88 9.88A3 3 0 0114.12 14.12M3 3l18 18" />
     </svg>
+  );
+}
+
+// Reusable styled input for this page
+function AuthInput({
+  label, type, placeholder, autoComplete, showToggle, show, onToggle, registration, error,
+}: {
+  label: string; type: string; placeholder: string; autoComplete?: string;
+  showToggle?: boolean; show?: boolean; onToggle?: () => void;
+  registration: object; error?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type={show !== undefined ? (show ? 'text' : 'password') : type}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className="auth-input w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-[rgba(255,255,255,0.3)] outline-none transition-all"
+          style={{
+            background: T.inputBg,
+            border: `1px solid ${T.borderColor}`,
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            paddingRight: showToggle ? '2.75rem' : undefined,
+          }}
+          {...registration}
+        />
+        {showToggle && onToggle && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={onToggle}
+            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+            style={{ color: 'rgba(238,242,255,0.35)' }}
+          >
+            <EyeIcon open={!!show} />
+          </button>
+        )}
+      </div>
+      {error && <p className="text-xs mt-1.5 font-semibold" style={{ color: T.danger }}>{error}</p>}
+    </div>
   );
 }
 
@@ -36,83 +83,110 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3" style={{ background: 'rgba(245,184,0,0.1)', border: '2px solid rgba(245,184,0,0.3)' }}>
-            <span className="text-3xl">⚽</span>
-          </div>
-          <div className="font-black text-2xl text-text-primary uppercase tracking-tight">World Cup 2026</div>
-          <div className="text-xs font-bold uppercase tracking-widest mt-1" style={{ color: '#f5b800' }}>Predictions League</div>
-        </div>
-
-        <div className="rounded-xl overflow-hidden" style={{ background: '#071428', border: '1px solid rgba(26,58,107,0.8)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <div className="h-1" style={{ background: 'linear-gradient(90deg,#f5b800,#16a34a,#3b82f6,#f5b800)' }} />
-          <div className="px-6 py-6">
-            <h2 className="font-black text-lg text-text-primary uppercase mb-5">Create Account</h2>
-
-            {error && (
-              <div className="mb-4 px-3 py-2 rounded-lg text-xs font-bold" style={{ background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171' }}>{error}</div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="label">Email</label>
-                <input type="email" autoComplete="email" className="input" placeholder="you@example.com"
-                  {...register('email', { required: 'Required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' } })} />
-                {errors.email && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.email.message}</p>}
-              </div>
-              <div>
-                <label className="label">Username</label>
-                <input type="text" autoComplete="username" className="input" placeholder="player_123"
-                  {...register('username', { required: 'Required', minLength: { value: 3, message: 'Min 3 chars' }, maxLength: { value: 50, message: 'Max 50 chars' }, pattern: { value: /^[a-zA-Z0-9_]+$/, message: 'Alphanumeric + underscore only' } })} />
-                {errors.username && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.username.message}</p>}
-              </div>
-              <div>
-                <label className="label">Password</label>
-                <div className="relative">
-                  <input type={showPw ? 'text' : 'password'} autoComplete="new-password" className="input pr-10" placeholder="Min 8 chars, uppercase, number, special"
-                    {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 characters' },
-                      validate: v => {
-                        if (!/[A-Z]/.test(v)) return 'Need 1 uppercase';
-                        if (!/\d/.test(v)) return 'Need 1 number';
-                        if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(v)) return 'Need 1 special char';
-                        return true;
-                      }
-                    })} />
-                  <button type="button" tabIndex={-1} onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors">
-                    <EyeIcon open={showPw} />
-                  </button>
-                </div>
-                {errors.password && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.password.message}</p>}
-              </div>
-              <div>
-                <label className="label">Confirm Password</label>
-                <div className="relative">
-                  <input type={showConfirm ? 'text' : 'password'} autoComplete="new-password" className="input pr-10" placeholder="Repeat password"
-                    {...register('confirmPassword', { required: 'Required', validate: v => v === password || 'Passwords do not match' })} />
-                  <button type="button" tabIndex={-1} onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors">
-                    <EyeIcon open={showConfirm} />
-                  </button>
-                </div>
-                {errors.confirmPassword && <p className="text-xs mt-1 font-bold" style={{ color: '#dc2626' }}>{errors.confirmPassword.message}</p>}
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full py-3 rounded-lg font-black text-sm uppercase tracking-wide transition-all disabled:opacity-40 active:scale-95"
-                style={{ background: '#f5b800', color: '#020c1f' }}>
-                {loading ? 'Creating...' : 'Join the League'}
-              </button>
-            </form>
-
-            <p className="text-center text-xs mt-5" style={{ color: '#3d5a80' }}>
-              Already have an account?{' '}
-              <Link to="/login" className="font-bold" style={{ color: '#f5b800' }}>Sign in</Link>
-            </p>
-          </div>
-        </div>
+    <AuthLayout>
+      {/* Logo mark */}
+      <div className="mb-7">
+        <h2
+          className="font-black uppercase tracking-tight text-white"
+          style={{ fontSize: '2rem', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}
+        >
+          Join the League
+        </h2>
+        <p className="text-sm mt-1 font-semibold" style={{ color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>
+          Pick your winners. Claim your glory.
+        </p>
       </div>
-    </div>
+
+      {/* Error banner */}
+      {error && (
+        <div
+          className="mb-5 px-4 py-3 rounded-lg text-sm font-semibold"
+          style={{ background: 'rgba(239,68,68,0.12)', border: `1px solid rgba(239,68,68,0.3)`, color: '#fca5a5' }}
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <AuthInput
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          registration={register('email', {
+            required: 'Required',
+            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' },
+          })}
+          error={errors.email?.message}
+        />
+        <AuthInput
+          label="Username"
+          type="text"
+          placeholder="player_123"
+          autoComplete="username"
+          registration={register('username', {
+            required: 'Required',
+            minLength: { value: 3, message: 'Min 3 chars' },
+            maxLength: { value: 50, message: 'Max 50 chars' },
+            pattern: { value: /^[a-zA-Z0-9_]+$/, message: 'Letters, numbers & underscore only' },
+          })}
+          error={errors.username?.message}
+        />
+        <AuthInput
+          label="Password"
+          type="password"
+          placeholder="Min 8 chars, uppercase, number, special"
+          autoComplete="new-password"
+          showToggle
+          show={showPw}
+          onToggle={() => setShowPw(v => !v)}
+          registration={register('password', {
+            required: 'Required',
+            minLength: { value: 8, message: 'Min 8 characters' },
+            validate: v => {
+              if (!/[A-Z]/.test(v)) return 'Need 1 uppercase letter';
+              if (!/\d/.test(v))    return 'Need 1 number';
+              if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(v)) return 'Need 1 special character';
+              return true;
+            },
+          })}
+          error={errors.password?.message}
+        />
+        <AuthInput
+          label="Confirm Password"
+          type="password"
+          placeholder="Repeat password"
+          autoComplete="new-password"
+          showToggle
+          show={showConfirm}
+          onToggle={() => setShowConfirm(v => !v)}
+          registration={register('confirmPassword', {
+            required: 'Required',
+            validate: v => v === password || 'Passwords do not match',
+          })}
+          error={errors.confirmPassword?.message}
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-widest transition-all disabled:opacity-40 active:scale-[0.98] mt-2"
+          style={{ background: T.gold, color: '#020c1f', boxShadow: `0 4px 24px rgba(245,184,0,0.25)` }}
+        >
+          {loading ? 'Creating account…' : 'Join the League'}
+        </button>
+      </form>
+
+      <p className="text-center text-sm mt-7" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        Already have an account?{' '}
+        <Link
+          to="/login"
+          className="font-bold hover:opacity-80 transition-opacity"
+          style={{ color: T.gold }}
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
