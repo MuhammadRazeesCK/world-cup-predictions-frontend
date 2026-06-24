@@ -26,7 +26,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<LoginForm>({ defaultValues: { email: '', password: '' }, mode: 'onSubmit' });
 
   const onSubmit = async (data: LoginForm) => {
     setError(''); setLoading(true);
@@ -69,6 +69,8 @@ export default function Login() {
           <input
             type="email"
             autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
             placeholder="you@example.com"
             className="auth-input w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-[rgba(255,255,255,0.3)] outline-none transition-all"
             style={{
@@ -76,8 +78,11 @@ export default function Login() {
               border: `1px solid ${T.borderColor}`,
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
+              WebkitTextFillColor: 'white',
             }}
             {...register('email', { required: 'Email is required' })}
+            value={watch('email')}
+            onChange={e => setValue('email', e.target.value, { shouldValidate: false })}
           />
           {errors.email && <p className="text-xs mt-1.5 font-semibold" style={{ color: T.danger }}>{errors.email.message}</p>}
         </div>
@@ -98,8 +103,11 @@ export default function Login() {
                 border: `1px solid ${T.borderColor}`,
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
+                WebkitTextFillColor: 'white',
               }}
               {...register('password', { required: 'Password is required' })}
+              value={watch('password')}
+              onChange={e => setValue('password', e.target.value, { shouldValidate: false })}
             />
             <button
               type="button"
