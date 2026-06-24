@@ -119,7 +119,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
   return (
     <div
-      className="h-[100dvh] flex flex-col lg:flex-row overflow-hidden"
+      className="min-h-[100dvh] flex flex-col lg:h-[100dvh] lg:flex-row lg:overflow-hidden"
       style={{ fontFamily: T.fontFamily }}
     >
       {/* Full-width flag strip pinned at very top — both mobile and desktop */}
@@ -133,7 +133,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           MOBILE — full-screen background image
           form floats at bottom over gradient
           ══════════════════════════════════════ */}
-      <div className="lg:hidden relative flex flex-col h-full" style={heroBgStyle}>
+      <div className="lg:hidden relative flex flex-col min-h-[100dvh]" style={heroBgStyle}>
 
         {/* Gradient: clear at top → dark at bottom so image shows fully */}
         <div
@@ -158,7 +158,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <div className="flex-1" />
 
         {/* Form — no card, just floats on the gradient */}
-        <div className="relative z-10 px-6 pb-10 overflow-y-auto">
+        <div className="relative z-10 px-6 pb-10">
           {children}
         </div>
       </div>
