@@ -77,6 +77,7 @@ export default function Login() {
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
             }}
+            {...register('email', { required: 'Email is required' })}
           />
           {errors.email && <p className="text-xs mt-1.5 font-semibold" style={{ color: T.danger }}>{errors.email.message}</p>}
         </div>
