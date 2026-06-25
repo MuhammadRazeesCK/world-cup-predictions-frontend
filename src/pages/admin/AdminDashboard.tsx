@@ -699,7 +699,8 @@ function AllPredictions() {
   const upcoming = groups.filter((g) => g.fixture.status === 'scheduled' || g.fixture.status === 'live');
   const completed = groups.filter((g) => g.fixture.status === 'completed');
 
-  const renderFixtureCard = ({ fixture: f, predictions, pending_users }: typeof groups[0]) => {
+  const renderFixtureCard = ({ fixture: f, predictions, pending_users: _pending }: typeof groups[0]) => {
+    const pending_users: string[] = _pending ?? [];
     const isOpen = expandedFixtures.has(f.id);
     const statusColors: Record<string, string> = {
       scheduled: 'text-blue-400',
@@ -819,8 +820,8 @@ function AllPredictions() {
     </button>
   );
 
-  const upcomingPendingCount = upcoming.filter((g) => g.pending_users.length > 0).length;
-  const completedPendingCount = completed.filter((g) => g.pending_users.length > 0).length;
+  const upcomingPendingCount = upcoming.filter((g) => (g.pending_users ?? []).length > 0).length;
+  const completedPendingCount = completed.filter((g) => (g.pending_users ?? []).length > 0).length;
 
   return (
     <div className="space-y-3">
