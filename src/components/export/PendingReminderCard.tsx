@@ -195,8 +195,26 @@ export function PendingReminderExport({ groups }: { groups: PendingGroup[] }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
+  // Only fixtures that actually have pending users are selectable
+  const selectable = groups.filter((g) => (g.pending_users ?? []).length > 0);
+
+  // Default: all selectable fixtures checked
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(selectable.map((g) => g.fixture.id)));
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelected(selected.size === selectable.length ? new Set() : new Set(selectable.map((g) => g.fixture.id)));
+
+  const selectedGroups = selectable.filter((g) => selected.has(g.fixture.id));
+
   const handleExport = async () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || selectedGroups.length === 0) return;
     setExporting(true);
     try {
       await document.fonts.ready;
@@ -213,18 +231,55 @@ export function PendingReminderExport({ groups }: { groups: PendingGroup[] }) {
     }
   };
 
-  const withPending = groups.filter((g) => (g.pending_users ?? []).length > 0);
-
   return (
     <div>
+      {/* Fixture selector */}
+      {selectable.length > 0 && (
+        <div className="mb-4 space-y-1.5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-text-secondary text-xs uppercase tracking-wide font-semibold">Select fixtures to include</span>
+            <button
+              onClick={toggleAll}
+              className="text-xs font-bold uppercase tracking-wide"
+              style={{ color: '#f5b800' }}
+            >
+              {selected.size === selectable.length ? 'Deselect all' : 'Select all'}
+            </button>
+          </div>
+          {selectable.map(({ fixture: f, pending_users }) => (
+            <label
+              key={f.id}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+              style={{
+                background: selected.has(f.id) ? 'rgba(245,184,0,0.07)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${selected.has(f.id) ? 'rgba(245,184,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(f.id)}
+                onChange={() => toggle(f.id)}
+                className="accent-yellow-400 w-3.5 h-3.5 shrink-0"
+              />
+              <span className="text-text-primary text-xs font-medium flex-1 min-w-0 truncate">
+                M{f.match_number} · {f.home_team} vs {f.away_team}
+              </span>
+              <span className="text-xs shrink-0" style={{ color: '#f87171' }}>
+                {(pending_users ?? []).length} pending
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+
       {/* Export button */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-text-secondary text-xs">
-          {withPending.length} match{withPending.length !== 1 ? 'es' : ''} with pending submissions
+          {selectedGroups.length} match{selectedGroups.length !== 1 ? 'es' : ''} selected for export
         </span>
         <button
           onClick={handleExport}
-          disabled={exporting || withPending.length === 0}
+          disabled={exporting || selectedGroups.length === 0}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity disabled:opacity-40"
           style={{ background: 'rgba(245,184,0,0.15)', color: '#f5b800', border: '1px solid rgba(245,184,0,0.3)' }}
         >
@@ -237,22 +292,28 @@ export function PendingReminderExport({ groups }: { groups: PendingGroup[] }) {
         </button>
       </div>
 
-      {/* Scaled preview */}
-      <div style={{
-        width: CARD_W * PREVIEW_SCALE,
-        overflow: 'hidden',
-        borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.08)',
-        margin: '0 auto',
-      }}>
+      {/* Scaled preview — only selected fixtures */}
+      {selectedGroups.length > 0 ? (
         <div style={{
-          transform: `scale(${PREVIEW_SCALE})`,
-          transformOrigin: 'top left',
-          width: CARD_W,
+          width: CARD_W * PREVIEW_SCALE,
+          overflow: 'hidden',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.08)',
+          margin: '0 auto',
         }}>
-          <CardBody cardRef={cardRef} groups={groups} />
+          <div style={{
+            transform: `scale(${PREVIEW_SCALE})`,
+            transformOrigin: 'top left',
+            width: CARD_W,
+          }}>
+            <CardBody cardRef={cardRef} groups={selectedGroups} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-center text-text-secondary text-sm py-6">
+          Select at least one fixture to preview the image.
+        </div>
+      )}
     </div>
   );
 }
