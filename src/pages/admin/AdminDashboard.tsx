@@ -10,6 +10,7 @@ import { Fixture } from '../../types';
 import { formatKickoffIST, formatStageName } from '../../utils/timezone';
 import { SORTED_TEAMS, TeamFlag } from '../../utils/teams';
 import { ExportTab } from '../../components/export/ExportTab';
+import { PendingReminderExport } from '../../components/export/PendingReminderCard';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -839,6 +840,12 @@ function AllPredictions() {
           <div className="text-text-secondary text-xs">Completed</div>
           <div className="text-text-primary font-bold text-lg">{completed.length}</div>
         </div>
+      </div>
+
+      {/* Pending reminder export */}
+      <div className="card">
+        <div className="font-semibold text-text-primary text-sm mb-3">Export Pending Reminders</div>
+        <PendingReminderExport groups={upcoming} />
       </div>
 
       {/* Upcoming + Live section */}
