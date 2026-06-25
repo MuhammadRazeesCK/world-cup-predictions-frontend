@@ -22,11 +22,12 @@ function EyeIcon({ open }: { open: boolean }) {
 
 // Reusable styled input for this page
 function AuthInput({
-  label, type, placeholder, autoComplete, showToggle, show, onToggle, registration, error,
+  label, type, placeholder, autoComplete, showToggle, show, onToggle, registration, error, value, onChange,
 }: {
   label: string; type: string; placeholder: string; autoComplete?: string;
   showToggle?: boolean; show?: boolean; onToggle?: () => void;
   registration: object; error?: string;
+  value?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div>
@@ -38,15 +39,20 @@ function AuthInput({
           type={show !== undefined ? (show ? 'text' : 'password') : type}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          autoCapitalize="none"
+          autoCorrect="off"
           className="auth-input w-full px-4 py-3 rounded-xl text-sm font-medium text-white placeholder-[rgba(255,255,255,0.3)] outline-none transition-all"
           style={{
             background: T.inputBg,
             border: `1px solid ${T.borderColor}`,
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
+            WebkitTextFillColor: 'white',
             paddingRight: showToggle ? '2.75rem' : undefined,
           }}
           {...registration}
+          value={value}
+          onChange={onChange}
         />
         {showToggle && onToggle && (
           <button
@@ -72,7 +78,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<SignupForm>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<SignupForm>();
   const password = watch('password');
 
   const onSubmit = async (data: SignupForm) => {
@@ -117,6 +123,8 @@ export default function Signup() {
             required: 'Required',
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' },
           })}
+          value={watch('email')}
+          onChange={e => setValue('email', e.target.value, { shouldValidate: false })}
           error={errors.email?.message}
         />
         <AuthInput
@@ -130,6 +138,8 @@ export default function Signup() {
             maxLength: { value: 50, message: 'Max 50 chars' },
             pattern: { value: /^[a-zA-Z0-9_]+$/, message: 'Letters, numbers & underscore only' },
           })}
+          value={watch('username')}
+          onChange={e => setValue('username', e.target.value, { shouldValidate: false })}
           error={errors.username?.message}
         />
         <AuthInput
@@ -150,6 +160,8 @@ export default function Signup() {
               return true;
             },
           })}
+          value={watch('password')}
+          onChange={e => setValue('password', e.target.value, { shouldValidate: false })}
           error={errors.password?.message}
         />
         <AuthInput
@@ -164,6 +176,8 @@ export default function Signup() {
             required: 'Required',
             validate: v => v === password || 'Passwords do not match',
           })}
+          value={watch('confirmPassword')}
+          onChange={e => setValue('confirmPassword', e.target.value, { shouldValidate: false })}
           error={errors.confirmPassword?.message}
         />
 

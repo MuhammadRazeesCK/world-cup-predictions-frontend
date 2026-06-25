@@ -78,11 +78,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           MOBILE — full-screen background image
           form floats at bottom over gradient
           ══════════════════════════════════════ */}
-      <div className="lg:hidden relative flex flex-col min-h-[100dvh]" style={heroBgStyle}>
+      <div className="lg:hidden relative flex flex-col min-h-[100dvh] overflow-y-auto" style={heroBgStyle}>
 
         {/* Gradient: clear at top → dark at bottom so image shows fully */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{
             background: 'linear-gradient(to bottom, rgba(6,8,9,0.1) 0%, transparent 25%, rgba(6,8,9,0.55) 55%, rgba(6,8,9,0.95) 72%, rgba(6,8,9,1) 100%)',
           }}
