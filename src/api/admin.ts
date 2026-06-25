@@ -98,6 +98,7 @@ export const adminApi = {
             points: number | null;
             predicted_at: string;
         }>;
+        pending_users: string[];
     }>>> => {
         const { data } = await apiClient.get('/admin/predictions');
         return data;

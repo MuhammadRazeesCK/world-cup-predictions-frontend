@@ -669,9 +669,12 @@ function AllPredictions() {
     staleTime: 30 * 1000,
   });
 
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const toggleExpanded = (id: string) =>
-    setExpanded((prev) => {
+  const [expandedFixtures, setExpandedFixtures] = useState<Set<string>>(new Set());
+  const [showUpcoming, setShowUpcoming] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  const toggleFixture = (id: string) =>
+    setExpandedFixtures((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -692,102 +695,186 @@ function AllPredictions() {
 
   const groups = data ?? [];
   const totalPredictions = groups.reduce((s, g) => s + g.predictions.length, 0);
-  const fixturesWithPredictions = groups.filter((g) => g.predictions.length > 0).length;
+
+  const upcoming = groups.filter((g) => g.fixture.status === 'scheduled' || g.fixture.status === 'live');
+  const completed = groups.filter((g) => g.fixture.status === 'completed');
+
+  const renderFixtureCard = ({ fixture: f, predictions, pending_users }: typeof groups[0]) => {
+    const isOpen = expandedFixtures.has(f.id);
+    const statusColors: Record<string, string> = {
+      scheduled: 'text-blue-400',
+      live: 'text-green-400',
+      completed: 'text-slate-400',
+    };
+    const scoreDisplay =
+      f.home_score !== null && f.away_score !== null
+        ? `${f.home_score}–${f.away_score}`
+        : 'TBD';
+
+    return (
+      <div key={f.id} className="card overflow-hidden p-0">
+        <button
+          className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-slate-800 transition-colors"
+          onClick={() => toggleFixture(f.id)}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-text-secondary text-xs shrink-0">M{f.match_number}</span>
+            <span className="text-text-primary font-medium text-sm truncate">
+              <TeamFlag name={f.home_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.home_team} vs <TeamFlag name={f.away_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.away_team}
+            </span>
+            <span className={`text-xs font-medium shrink-0 ${statusColors[f.status] ?? 'text-slate-400'}`}>
+              {f.status === 'completed' ? scoreDisplay : f.status.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            {pending_users.length > 0 && (
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                {pending_users.length} pending
+              </span>
+            )}
+            <span className="text-xs text-text-secondary">{predictions.length} submitted</span>
+            <span className="text-text-secondary text-xs">{isOpen ? '▲' : '▼'}</span>
+          </div>
+        </button>
+
+        {isOpen && (
+          <div className="border-t border-slate-700">
+            {/* Pending users */}
+            {pending_users.length > 0 && (
+              <div className="px-4 py-3 border-b border-slate-700/50" style={{ background: 'rgba(239,68,68,0.05)' }}>
+                <div className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: '#f87171' }}>
+                  Not submitted yet
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {pending_users.map((u) => (
+                    <span key={u} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)' }}>
+                      @{u}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Predictions table */}
+            {predictions.length === 0 ? (
+              <p className="px-4 py-3 text-text-secondary text-sm">No predictions yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-800 text-text-secondary text-xs">
+                    <th className="text-left px-4 py-2">Player</th>
+                    <th className="text-center px-3 py-2">Prediction</th>
+                    <th className="text-center px-3 py-2">Result</th>
+                    <th className="text-center px-3 py-2">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {predictions.map((p) => (
+                    <tr key={p.id} className="border-t border-slate-700/50 hover:bg-slate-800/40">
+                      <td className="px-4 py-2 text-text-primary font-medium">{p.username}</td>
+                      <td className="px-3 py-2 text-center font-mono text-text-primary">
+                        {p.home_goals}–{p.away_goals}
+                      </td>
+                      <td className="px-3 py-2 text-center">{resultBadge(p.result)}</td>
+                      <td className="px-3 py-2 text-center">
+                        {p.points !== null ? (
+                          <span className={`font-bold ${p.points >= 8 ? 'text-green-400' : p.points >= 3 ? 'text-blue-400' : 'text-slate-400'}`}>
+                            {p.points}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-xs">–</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const SectionHeader = ({
+    label, count, pendingCount, open, onToggle,
+  }: { label: string; count: number; pendingCount: number; open: boolean; onToggle: () => void }) => (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-sm transition-colors hover:bg-slate-800"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-text-primary">{label}</span>
+        <span className="text-xs text-text-secondary">({count} matches)</span>
+        {pendingCount > 0 && (
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded"
+            style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+            {pendingCount} with pending
+          </span>
+        )}
+      </div>
+      <span className="text-text-secondary text-xs">{open ? '▲' : '▼'}</span>
+    </button>
+  );
+
+  const upcomingPendingCount = upcoming.filter((g) => g.pending_users.length > 0).length;
+  const completedPendingCount = completed.filter((g) => g.pending_users.length > 0).length;
 
   return (
     <div className="space-y-3">
       {/* Summary */}
       <div className="card flex gap-6 text-sm">
         <div>
-          <div className="text-text-secondary text-xs">Fixtures with predictions</div>
-          <div className="text-text-primary font-bold text-lg">{fixturesWithPredictions}</div>
-        </div>
-        <div>
           <div className="text-text-secondary text-xs">Total predictions</div>
           <div className="text-text-primary font-bold text-lg">{totalPredictions}</div>
         </div>
+        <div>
+          <div className="text-text-secondary text-xs">Upcoming + Live</div>
+          <div className="text-text-primary font-bold text-lg">{upcoming.length}</div>
+        </div>
+        <div>
+          <div className="text-text-secondary text-xs">Completed</div>
+          <div className="text-text-primary font-bold text-lg">{completed.length}</div>
+        </div>
       </div>
 
-      {groups.length === 0 && (
-        <div className="card text-text-secondary text-sm">No predictions submitted yet.</div>
-      )}
-
-      {groups.map(({ fixture: f, predictions }) => {
-        const isOpen = expanded.has(f.id);
-        const statusColors: Record<string, string> = {
-          scheduled: 'text-blue-400',
-          live: 'text-green-400',
-          completed: 'text-slate-400',
-        };
-        const scoreDisplay =
-          f.home_score !== null && f.away_score !== null
-            ? `${f.home_score}–${f.away_score}`
-            : 'TBD';
-
-        return (
-          <div key={f.id} className="card overflow-hidden p-0">
-            {/* Fixture header — always visible, click to expand */}
-            <button
-              className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-slate-800 transition-colors"
-              onClick={() => toggleExpanded(f.id)}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-text-secondary text-xs shrink-0">M{f.match_number}</span>
-                <span className="text-text-primary font-medium text-sm truncate">
-                  <TeamFlag name={f.home_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.home_team} vs <TeamFlag name={f.away_team} className="w-5 h-3.5 rounded-sm inline-block mr-1" />{f.away_team}
-                </span>
-                <span className={`text-xs font-medium shrink-0 ${statusColors[f.status] ?? 'text-slate-400'}`}>
-                  {f.status === 'completed' ? scoreDisplay : f.status.toUpperCase()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="text-xs text-text-secondary">{predictions.length} prediction{predictions.length !== 1 ? 's' : ''}</span>
-                <span className="text-text-secondary text-xs">{isOpen ? '▲' : '▼'}</span>
-              </div>
-            </button>
-
-            {/* Predictions table */}
-            {isOpen && (
-              <div className="border-t border-slate-700">
-                {predictions.length === 0 ? (
-                  <p className="px-4 py-3 text-text-secondary text-sm">No predictions yet.</p>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-800 text-text-secondary text-xs">
-                        <th className="text-left px-4 py-2">Player</th>
-                        <th className="text-center px-3 py-2">Prediction</th>
-                        <th className="text-center px-3 py-2">Result</th>
-                        <th className="text-center px-3 py-2">Points</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {predictions.map((p) => (
-                        <tr key={p.id} className="border-t border-slate-700/50 hover:bg-slate-800/40">
-                          <td className="px-4 py-2 text-text-primary font-medium">{p.username}</td>
-                          <td className="px-3 py-2 text-center font-mono text-text-primary">
-                            {p.home_goals}–{p.away_goals}
-                          </td>
-                          <td className="px-3 py-2 text-center">{resultBadge(p.result)}</td>
-                          <td className="px-3 py-2 text-center">
-                            {p.points !== null ? (
-                              <span className={`font-bold ${p.points >= 8 ? 'text-green-400' : p.points >= 3 ? 'text-blue-400' : 'text-slate-400'}`}>
-                                {p.points}
-                              </span>
-                            ) : (
-                              <span className="text-slate-500 text-xs">–</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
+      {/* Upcoming + Live section */}
+      <div className="space-y-2">
+        <SectionHeader
+          label="Upcoming + Live"
+          count={upcoming.length}
+          pendingCount={upcomingPendingCount}
+          open={showUpcoming}
+          onToggle={() => setShowUpcoming((v) => !v)}
+        />
+        {showUpcoming && (
+          <div className="space-y-2 pl-1">
+            {upcoming.length === 0
+              ? <p className="text-text-secondary text-sm px-2">No upcoming fixtures.</p>
+              : upcoming.map((g) => renderFixtureCard(g))}
           </div>
-        );
-      })}
+        )}
+      </div>
+
+      {/* Completed section */}
+      <div className="space-y-2">
+        <SectionHeader
+          label="Completed"
+          count={completed.length}
+          pendingCount={completedPendingCount}
+          open={showCompleted}
+          onToggle={() => setShowCompleted((v) => !v)}
+        />
+        {showCompleted && (
+          <div className="space-y-2 pl-1">
+            {completed.length === 0
+              ? <p className="text-text-secondary text-sm px-2">No completed fixtures yet.</p>
+              : completed.map((g) => renderFixtureCard(g))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
