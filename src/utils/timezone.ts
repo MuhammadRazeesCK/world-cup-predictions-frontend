@@ -3,7 +3,21 @@ import { DateTime } from 'luxon';
 const IST = 'Asia/Kolkata';
 
 export function formatKickoffIST(isoString: string): string {
-    return DateTime.fromISO(isoString).setZone(IST).toFormat("dd MMM, h:mm a 'IST'");
+    const match = DateTime.fromISO(isoString).setZone(IST);
+    const today = DateTime.now().setZone(IST).startOf('day');
+    const matchDay = match.startOf('day');
+    const diffDays = matchDay.diff(today, 'days').days;
+
+    let dayLabel: string;
+    if (diffDays === 0) {
+        dayLabel = 'Today';
+    } else if (diffDays === 1) {
+        dayLabel = 'Tomorrow';
+    } else {
+        dayLabel = match.toFormat('dd MMM');
+    }
+
+    return `${dayLabel}, ${match.toFormat("h:mm a 'IST'")}`;
 }
 
 export function formatDateIST(isoString: string): string {
