@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth';
 import { User } from '../types';
 
@@ -15,6 +16,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const queryClient = useQueryClient();
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         localStorage.setItem('authToken', newToken);
         localStorage.setItem('authUser', JSON.stringify(userData));
-    }, []);
+        queryClient.invalidateQueries();
+    }, [queryClient]);
 
     const signup = useCallback(async (email: string, username: string, password: string) => {
         const response = await authApi.signup(email, username, password);
@@ -56,7 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         localStorage.setItem('authToken', newToken);
         localStorage.setItem('authUser', JSON.stringify(userData));
-    }, []);
+        queryClient.invalidateQueries();
+    }, [queryClient]);
 
     const logout = useCallback(async () => {
         try {
