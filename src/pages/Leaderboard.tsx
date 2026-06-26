@@ -42,36 +42,45 @@ function RankBadge({ rank }: { rank: number }) {
 
 interface PodiumEntry { rank: number; username: string; total_points: number; accuracy_percentage: number; user_id: string; }
 
-function PodiumCard({ entry, isMe, height }: { entry: PodiumEntry; isMe: boolean; height: string }) {
+function PodiumCard({ entry, isMe, baseHeight }: { entry: PodiumEntry; isMe: boolean; baseHeight: number }) {
   const c = podiumColor[entry.rank as 1|2|3];
   return (
-    <div
-      className="flex-1 flex flex-col items-center justify-end rounded-xl px-3 pb-4 pt-3 relative overflow-hidden"
-      style={{
-        background: c.bg,
-        border: `1px solid ${c.border}`,
-        boxShadow: `0 0 24px ${c.glow}`,
-        minHeight: height,
-      }}
-    >
-      {/* Rank badge */}
-      <span
-        className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mb-2 flex-shrink-0"
-        style={{ background: c.badgeBg, color: c.badge, border: `1px solid ${c.border}` }}
+    <div className="flex-1 flex flex-col items-center">
+      {/* Info above the platform */}
+      <div className="flex flex-col items-center w-full px-1 mb-2">
+        <span
+          className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mb-2 flex-shrink-0"
+          style={{ background: c.badgeBg, color: c.badge, border: `1px solid ${c.border}` }}
+        >
+          {entry.rank}
+        </span>
+        <div className="font-black text-xs uppercase tracking-wide text-center leading-tight mb-1 w-full truncate"
+          style={{ color: isMe ? '#f5b800' : 'rgba(255,255,255,0.85)' }}>
+          {entry.username}
+          {isMe && <span className="block text-[9px] font-bold normal-case" style={{ color: 'rgba(255,255,255,0.35)' }}>you</span>}
+        </div>
+        <div className="font-black text-center" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.5rem', color: c.badge, lineHeight: 1 }}>
+          {entry.total_points}
+          <span className="text-xs font-bold ml-0.5" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'inherit' }}>pts</span>
+        </div>
+        <div className="text-[9px] font-bold uppercase tracking-wide mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          {entry.accuracy_percentage}% acc
+        </div>
+      </div>
+      {/* Podium platform */}
+      <div
+        className="w-full rounded-t-xl flex items-center justify-center"
+        style={{
+          height: `${baseHeight}px`,
+          background: c.bg,
+          border: `1px solid ${c.border}`,
+          borderBottom: 'none',
+          boxShadow: `0 -4px 20px ${c.glow}`,
+        }}
       >
-        {entry.rank}
-      </span>
-      <div className="font-black text-xs uppercase tracking-wide text-center leading-tight mb-1 truncate w-full text-center"
-        style={{ color: isMe ? '#f5b800' : 'rgba(255,255,255,0.85)' }}>
-        {entry.username}
-        {isMe && <span className="block text-[9px] font-bold normal-case" style={{ color: 'rgba(255,255,255,0.35)' }}>you</span>}
-      </div>
-      <div className="font-black text-center" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.5rem', color: c.badge, lineHeight: 1 }}>
-        {entry.total_points}
-        <span className="text-xs font-bold ml-0.5" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'inherit' }}>pts</span>
-      </div>
-      <div className="text-[9px] font-bold uppercase tracking-wide mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-        {entry.accuracy_percentage}% acc
+        <span className="font-black text-2xl" style={{ fontFamily: '"Bebas Neue", sans-serif', color: c.badge, opacity: 0.18 }}>
+          {entry.rank}
+        </span>
       </div>
     </div>
   );
@@ -146,16 +155,16 @@ export default function LeaderboardPage() {
             {top3.length > 0 && (
               <div className="flex items-end gap-2">
                 {top3.length === 3 ? (
-                  // Full podium: 2 | 1 | 3 order
+                  // Full podium: 2 | 1 | 3 order, bottom-aligned
                   <>
-                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} height="130px" />
-                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} height="160px" />
-                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} height="115px" />
+                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} baseHeight={80} />
+                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} baseHeight={120} />
+                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} baseHeight={55} />
                   </>
                 ) : (
                   // Fewer than 3 players — show in rank order
                   top3.map(e => (
-                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} height="140px" />
+                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} baseHeight={90} />
                   ))
                 )}
               </div>
