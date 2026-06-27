@@ -55,7 +55,7 @@ export default function Profile() {
 
   const { data: meData } = useQuery({
     queryKey: ['users', 'me'],
-    queryFn: () => usersApi.getMe().then((r) => r.data),
+    queryFn: () => usersApi.getMe().then((r: { data: { id: string; username: string; email: string; role: string; avatar_url: string | null } }) => r.data),
     staleTime: 60_000,
   });
 

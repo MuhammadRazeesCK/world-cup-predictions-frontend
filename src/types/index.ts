@@ -9,6 +9,7 @@ export interface User {
     email: string;
     username: string;
     role: 'user' | 'admin';
+    avatar_url?: string | null;
 }
 
 export interface AuthState {
@@ -88,6 +89,7 @@ export interface LeaderboardEntry {
     rank: number;
     user_id: string;
     username: string;
+    avatar_url: string | null;
     total_points: number;
     total_predictions: number;
     completed_predictions: number;
