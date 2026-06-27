@@ -24,6 +24,11 @@ export const predictionsApi = {
         return data;
     },
 
+    getUserHistory: async (username: string): Promise<ApiResponse<{ total: number; predictions: PredictionHistoryItem[] }>> => {
+        const { data } = await apiClient.get(`/predictions/history/user/${encodeURIComponent(username)}`);
+        return data;
+    },
+
     getForFixture: async (fixture_id: string): Promise<ApiResponse<Prediction> | null> => {
         try {
             const { data } = await apiClient.get(`/predictions/${fixture_id}`);
