@@ -400,10 +400,10 @@ export function ExportTab() {
     } catch (e: any) { if (e?.name !== 'AbortError') console.error(e); }
     finally { setSharing(false); }
   };
-  const WABtn = ({ ref: r }: { ref: React.RefObject<HTMLDivElement> }) => (
+  const WABtn = ({ divRef }: { divRef: React.RefObject<HTMLDivElement> }) => (
     <button
       disabled={sharing}
-      onClick={() => shareWA(r)}
+      onClick={() => shareWA(divRef)}
       className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity disabled:opacity-40"
       style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}
     >
@@ -474,7 +474,7 @@ export function ExportTab() {
             {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
             <div className="flex gap-2">
               <Button isLoading={exporting} onClick={() => dl(predsRef, `wc2026-m${selectedPredGroup.fixture.match_number}-${slug(selectedPredGroup.fixture.home_team)}-vs-${slug(selectedPredGroup.fixture.away_team)}-predictions.png`)}>⬇ Download PNG</Button>
-              <WABtn ref={predsRef} />
+              <WABtn divRef={predsRef} />
             </div>
           </div>
         )}
@@ -487,7 +487,7 @@ export function ExportTab() {
             {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
             <div className="flex gap-2">
               <Button isLoading={exporting} onClick={() => dl(standRef, `wc2026-standings-${new Date().toISOString().split('T')[0]}.png`)}>⬇ Download PNG</Button>
-              <WABtn ref={standRef} />
+              <WABtn divRef={standRef} />
             </div>
           </div>
         ) : <div className="text-text-secondary text-sm">No leaderboard data yet.</div>}
@@ -500,7 +500,7 @@ export function ExportTab() {
             {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
             <div className="flex gap-2">
               <Button isLoading={exporting} onClick={() => dl(winnersRef, `wc2026-m${selectedWinnersGroup.fixture.match_number}-${slug(selectedWinnersGroup.fixture.home_team)}-vs-${slug(selectedWinnersGroup.fixture.away_team)}-winners.png`)}>⬇ Download PNG</Button>
-              <WABtn ref={winnersRef} />
+              <WABtn divRef={winnersRef} />
             </div>
           </div>
         )}
