@@ -98,7 +98,8 @@ function PodiumCard({ entry, isMe, baseHeight, onViewPicks }: { entry: PodiumEnt
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
-  const { data, isLoading, error } = useLeaderboard({ limit: 100 });
+  const [stageGroup, setStageGroup] = useState<'all' | 'group' | 'knockout'>('all');
+  const { data, isLoading, error } = useLeaderboard({ limit: 100, stage_group: stageGroup });
   const { data: myStats } = useUserStats();
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
@@ -123,6 +124,29 @@ export default function LeaderboardPage() {
               {data.total_users} players competing
             </p>
           )}
+        </div>
+
+        {/* Stage filter tabs */}
+        <div className="flex items-center gap-2">
+          {([
+            { key: 'all',      label: 'Overall'     },
+            { key: 'group',    label: 'Group Stage' },
+            { key: 'knockout', label: 'Knockout'    },
+          ] as const).map(tab => {
+            const active = stageGroup === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStageGroup(tab.key)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                style={active
+                  ? { background: '#f5b800', color: '#0a0a0a' }
+                  : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Your rank banner */}

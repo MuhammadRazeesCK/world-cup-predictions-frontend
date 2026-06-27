@@ -5,6 +5,7 @@ export const leaderboardApi = {
     getLeaderboard: async (params?: {
         limit?: number;
         offset?: number;
+        stage_group?: 'all' | 'group' | 'knockout';
     }): Promise<ApiResponse<LeaderboardData>> => {
         const { data } = await apiClient.get('/leaderboard', { params });
         return data;

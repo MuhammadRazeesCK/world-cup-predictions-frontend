@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { leaderboardApi } from '../api/leaderboard';
 import { useAuth } from '../context/AuthContext';
 
-export function useLeaderboard(params?: { limit?: number; offset?: number }) {
+export function useLeaderboard(params?: { limit?: number; offset?: number; stage_group?: 'all' | 'group' | 'knockout' }) {
     return useQuery({
         queryKey: ['leaderboard', params],
         queryFn: () => leaderboardApi.getLeaderboard(params).then((r) => r.data),
