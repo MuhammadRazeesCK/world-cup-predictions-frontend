@@ -49,9 +49,9 @@ function PodiumCard({ entry, isMe, cardHeight, onViewPicks }: { entry: PodiumEnt
 
   const bgStyle: React.CSSProperties = entry.avatar_url
     ? {
-        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.92) 100%), url(${entry.avatar_url})`,
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 35%, rgba(0,0,0,0.88) 100%), url(${entry.avatar_url})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center 20%',
       }
     : { background: c.bg };
 
@@ -222,9 +222,9 @@ export default function LeaderboardPage() {
               <div className="flex items-end gap-2">
                 {top3.length === 3 ? (
                   <>
-                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} cardHeight={220} onViewPicks={() => setViewingUser(top3[1].username)} />
-                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} cardHeight={270} onViewPicks={() => setViewingUser(top3[0].username)} />
-                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} cardHeight={195} onViewPicks={() => setViewingUser(top3[2].username)} />
+                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} cardHeight={160} onViewPicks={() => setViewingUser(top3[1].username)} />
+                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} cardHeight={200} onViewPicks={() => setViewingUser(top3[0].username)} />
+                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} cardHeight={140} onViewPicks={() => setViewingUser(top3[2].username)} />
                   </>
                 ) : (
                   top3.map(e => (
