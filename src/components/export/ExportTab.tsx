@@ -366,6 +366,8 @@ export function ExportTab() {
   const [winnersFixtureId, setWinnersFixtureId] = useState('');
   const [modal, setModal]   = useState<ModalType>(null);
   const [exporting, setExporting] = useState(false);
+  const [sharing, setSharing]   = useState(false);
+  const [copied, setCopied]     = useState(false);
   const predsRef    = useRef<HTMLDivElement>(null);
   const standRef    = useRef<HTMLDivElement>(null);
   const winnersRef  = useRef<HTMLDivElement>(null);
@@ -380,6 +382,37 @@ export function ExportTab() {
     catch (e) { console.error(e); }
     finally { setExporting(false); }
   };
+  const shareWA = async (ref: React.RefObject<HTMLDivElement>) => {
+    if (!ref.current) return;
+    setSharing(true);
+    try {
+      await document.fonts.ready;
+      const url = await toPng(ref.current, { pixelRatio: 2 });
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], 'wc2026-export.png', { type: 'image/png' });
+      const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      if (isTouchDevice && typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'WC 2026 Predictions League' });
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      setCopied(true); setTimeout(() => setCopied(false), 5000);
+    } catch (e: any) { if (e?.name !== 'AbortError') console.error(e); }
+    finally { setSharing(false); }
+  };
+  const WABtn = ({ ref: r }: { ref: React.RefObject<HTMLDivElement> }) => (
+    <button
+      disabled={sharing}
+      onClick={() => shareWA(r)}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity disabled:opacity-40"
+      style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      {sharing ? 'Sharing…' : 'Share to WhatsApp'}
+    </button>
+  );
   const slug = (s: string) => s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   const Card = ({ icon, title, desc, children }: { icon:string; title:string; desc:string; children:React.ReactNode }) => (
     <div className="card space-y-4">
@@ -438,7 +471,11 @@ export function ExportTab() {
         {selectedPredGroup && (
           <div className="space-y-4">
             <div style={{ border:'1px solid #1a2a3a', borderRadius:8, overflow:'hidden' }}><ScaledPreview scale={PREVIEW_SCALE} width={CARD_W}><PredictionsCard cardRef={predsRef} group={selectedPredGroup} /></ScaledPreview></div>
-            <Button isLoading={exporting} onClick={() => dl(predsRef, `wc2026-m${selectedPredGroup.fixture.match_number}-${slug(selectedPredGroup.fixture.home_team)}-vs-${slug(selectedPredGroup.fixture.away_team)}-predictions.png`)}>⬇ Download PNG</Button>
+            {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
+            <div className="flex gap-2">
+              <Button isLoading={exporting} onClick={() => dl(predsRef, `wc2026-m${selectedPredGroup.fixture.match_number}-${slug(selectedPredGroup.fixture.home_team)}-vs-${slug(selectedPredGroup.fixture.away_team)}-predictions.png`)}>⬇ Download PNG</Button>
+              <WABtn ref={predsRef} />
+            </div>
           </div>
         )}
       </Modal>
@@ -447,7 +484,11 @@ export function ExportTab() {
         {entries.length > 0 ? (
           <div className="space-y-4">
             <div style={{ border:'1px solid #1a2a3a', borderRadius:8, overflow:'hidden' }}><ScaledPreview scale={PREVIEW_SCALE} width={CARD_W}><StandingsCard cardRef={standRef} entries={entries} /></ScaledPreview></div>
-            <Button isLoading={exporting} onClick={() => dl(standRef, `wc2026-standings-${new Date().toISOString().split('T')[0]}.png`)}>⬇ Download PNG</Button>
+            {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
+            <div className="flex gap-2">
+              <Button isLoading={exporting} onClick={() => dl(standRef, `wc2026-standings-${new Date().toISOString().split('T')[0]}.png`)}>⬇ Download PNG</Button>
+              <WABtn ref={standRef} />
+            </div>
           </div>
         ) : <div className="text-text-secondary text-sm">No leaderboard data yet.</div>}
       </Modal>
@@ -456,7 +497,11 @@ export function ExportTab() {
         {selectedWinnersGroup && (
           <div className="space-y-4">
             <div style={{ border:'1px solid #1a2a3a', borderRadius:8, overflow:'hidden' }}><ScaledPreview scale={PREVIEW_SCALE} width={CARD_W}><WinnersCard cardRef={winnersRef} group={selectedWinnersGroup} /></ScaledPreview></div>
-            <Button isLoading={exporting} onClick={() => dl(winnersRef, `wc2026-m${selectedWinnersGroup.fixture.match_number}-${slug(selectedWinnersGroup.fixture.home_team)}-vs-${slug(selectedWinnersGroup.fixture.away_team)}-winners.png`)}>⬇ Download PNG</Button>
+            {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
+            <div className="flex gap-2">
+              <Button isLoading={exporting} onClick={() => dl(winnersRef, `wc2026-m${selectedWinnersGroup.fixture.match_number}-${slug(selectedWinnersGroup.fixture.home_team)}-vs-${slug(selectedWinnersGroup.fixture.away_team)}-winners.png`)}>⬇ Download PNG</Button>
+              <WABtn ref={winnersRef} />
+            </div>
           </div>
         )}
       </Modal>
