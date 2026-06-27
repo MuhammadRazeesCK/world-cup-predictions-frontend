@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useUserStats } from '../hooks/useLeaderboard';
 import { useAuth } from '../context/AuthContext';
+import { PlayerPredictionsModal, EyeIcon } from '../components/PlayerPredictionsModal';
 
 const podiumColor = {
   1: { bg: 'rgba(245,184,0,0.08)',    border: 'rgba(245,184,0,0.3)',    glow: 'rgba(245,184,0,0.12)',  badge: '#f5b800',  badgeBg: 'rgba(245,184,0,0.15)',  label: 'GOLD'   },
@@ -42,7 +44,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 interface PodiumEntry { rank: number; username: string; total_points: number; accuracy_percentage: number; user_id: string; }
 
-function PodiumCard({ entry, isMe, baseHeight }: { entry: PodiumEntry; isMe: boolean; baseHeight: number }) {
+function PodiumCard({ entry, isMe, baseHeight, onViewPicks }: { entry: PodiumEntry; isMe: boolean; baseHeight: number; onViewPicks: () => void }) {
   const c = podiumColor[entry.rank as 1|2|3];
   return (
     <div className="flex-1 flex flex-col items-center">
@@ -66,6 +68,14 @@ function PodiumCard({ entry, isMe, baseHeight }: { entry: PodiumEntry; isMe: boo
         <div className="text-[9px] font-bold uppercase tracking-wide mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
           {entry.accuracy_percentage}% acc
         </div>
+        <button
+          onClick={onViewPicks}
+          className="mt-2 w-6 h-6 rounded-lg flex items-center justify-center transition-opacity hover:opacity-100 opacity-40"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+          title={`View ${entry.username}'s picks`}
+        >
+          <EyeIcon />
+        </button>
       </div>
       {/* Podium platform */}
       <div
@@ -90,6 +100,7 @@ export default function LeaderboardPage() {
   const { user } = useAuth();
   const { data, isLoading, error } = useLeaderboard({ limit: 100 });
   const { data: myStats } = useUserStats();
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
 
   const top3 = data?.leaderboard.slice(0, 3) ?? [];
   const rest = data?.leaderboard.slice(3) ?? [];
@@ -157,14 +168,14 @@ export default function LeaderboardPage() {
                 {top3.length === 3 ? (
                   // Full podium: 2 | 1 | 3 order, bottom-aligned
                   <>
-                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} baseHeight={80} />
-                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} baseHeight={120} />
-                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} baseHeight={55} />
+                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} baseHeight={80}  onViewPicks={() => setViewingUser(top3[1].username)} />
+                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} baseHeight={120} onViewPicks={() => setViewingUser(top3[0].username)} />
+                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} baseHeight={55}  onViewPicks={() => setViewingUser(top3[2].username)} />
                   </>
                 ) : (
                   // Fewer than 3 players — show in rank order
                   top3.map(e => (
-                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} baseHeight={90} />
+                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} baseHeight={90} onViewPicks={() => setViewingUser(e.username)} />
                   ))
                 )}
               </div>
@@ -177,7 +188,7 @@ export default function LeaderboardPage() {
                 <div
                   className="grid px-4 py-2 text-[9px] font-black uppercase tracking-widest"
                   style={{
-                    gridTemplateColumns: '2.2rem 1fr 4rem 3.5rem 3.5rem',
+                    gridTemplateColumns: '2.2rem 1fr 4rem 3.5rem 3.5rem 2rem',
                     background: 'rgba(0,0,0,0.35)',
                     color: 'rgba(255,255,255,0.25)',
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -188,6 +199,7 @@ export default function LeaderboardPage() {
                   <span className="text-right">Pts</span>
                   <span className="text-right hidden sm:block">Exact</span>
                   <span className="text-right">Acc%</span>
+                  <span></span>
                 </div>
 
                 {rest.map((e, i) => {
@@ -197,7 +209,7 @@ export default function LeaderboardPage() {
                       key={e.user_id}
                       className="grid items-center px-4 py-2.5"
                       style={{
-                        gridTemplateColumns: '2.2rem 1fr 4rem 3.5rem 3.5rem',
+                        gridTemplateColumns: '2.2rem 1fr 4rem 3.5rem 3.5rem 2rem',
                         borderBottom: i < rest.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                         background: isMe ? 'rgba(245,184,0,0.04)' : 'transparent',
                         borderLeft: isMe ? '2px solid #f5b800' : '2px solid transparent',
@@ -217,6 +229,16 @@ export default function LeaderboardPage() {
                       <span className="text-right text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
                         {e.accuracy_percentage}%
                       </span>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setViewingUser(e.username)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center transition-opacity hover:opacity-100 opacity-40"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                          title={`View ${e.username}'s picks`}
+                        >
+                          <EyeIcon />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -226,6 +248,7 @@ export default function LeaderboardPage() {
         )}
       </main>
       <Footer />
+      {viewingUser && <PlayerPredictionsModal username={viewingUser} onClose={() => setViewingUser(null)} />}
     </div>
   );
 }
