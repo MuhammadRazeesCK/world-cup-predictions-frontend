@@ -1,7 +1,10 @@
+import { useRef, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { useUserStats } from '../hooks/useLeaderboard';
+import { usersApi } from '../api/users';
 
 function StatCard({ label, value, sub, accent = false }: { label: string; value: string | number; sub?: string; accent?: boolean }) {
   return (
@@ -46,6 +49,35 @@ function AccuracyBar({ value }: { value: number }) {
 export default function Profile() {
   const { user } = useAuth();
   const { data: stats } = useUserStats();
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const { data: meData } = useQuery({
+    queryKey: ['users', 'me'],
+    queryFn: () => usersApi.getMe().then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => usersApi.uploadAvatar(file),
+    onSuccess: () => { setPreview(null); qc.invalidateQueries({ queryKey: ['users', 'me'] }); qc.invalidateQueries({ queryKey: ['leaderboard'] }); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => usersApi.deleteAvatar(),
+    onSuccess: () => { setPreview(null); qc.invalidateQueries({ queryKey: ['users', 'me'] }); qc.invalidateQueries({ queryKey: ['leaderboard'] }); },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const currentAvatar = preview ?? meData?.avatar_url ?? null;
 
   return (
     <div className="min-h-screen pb-20 sm:pb-8" style={{ background: '#0a0a0a' }}>
@@ -72,22 +104,43 @@ export default function Profile() {
 
           <div className="px-5 py-5 flex items-center gap-4">
             {/* Avatar */}
-            <div
-              className="flex items-center justify-center flex-shrink-0 font-black select-none"
-              style={{
-                width: 64, height: 64,
-                borderRadius: '50%',
-                background: 'rgba(245,184,0,0.08)',
-                border: '2px solid rgba(245,184,0,0.35)',
-                boxShadow: '0 0 0 4px rgba(245,184,0,0.06)',
-                fontFamily: '"Bebas Neue", sans-serif',
-                fontSize: '1.8rem',
-                color: '#f5b800',
-              }}
-            >
-              {user?.username?.[0]?.toUpperCase()}
+            <div className="relative flex-shrink-0">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="block relative"
+                title="Change photo"
+              >
+                {currentAvatar ? (
+                  <img
+                    src={currentAvatar}
+                    alt="avatar"
+                    className="rounded-full object-cover"
+                    style={{ width: 64, height: 64, border: '2px solid rgba(245,184,0,0.35)', boxShadow: '0 0 0 4px rgba(245,184,0,0.06)' }}
+                  />
+                ) : (
+                  <div
+                    className="flex items-center justify-center font-black select-none"
+                    style={{
+                      width: 64, height: 64, borderRadius: '50%',
+                      background: 'rgba(245,184,0,0.08)',
+                      border: '2px solid rgba(245,184,0,0.35)',
+                      boxShadow: '0 0 0 4px rgba(245,184,0,0.06)',
+                      fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.8rem', color: '#f5b800',
+                    }}
+                  >
+                    {user?.username?.[0]?.toUpperCase()}
+                  </div>
+                )}
+                {/* Camera overlay */}
+                <span className="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </span>
+              </button>
             </div>
-
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div
@@ -125,6 +178,37 @@ export default function Profile() {
             )}
           </div>
         </div>
+
+        {/* Avatar save / cancel / remove buttons */}
+        {preview && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => { const file = fileInputRef.current?.files?.[0]; if (file) uploadMutation.mutate(file); }}
+              disabled={uploadMutation.isPending}
+              className="flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-opacity disabled:opacity-50"
+              style={{ background: '#f5b800', color: '#0a0a0a' }}
+            >
+              {uploadMutation.isPending ? 'Saving…' : 'Save Photo'}
+            </button>
+            <button
+              onClick={() => { setPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+              className="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        {!preview && meData?.avatar_url && (
+          <button
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            className="text-xs font-bold uppercase tracking-widest transition-opacity hover:opacity-100 opacity-50 disabled:opacity-30"
+            style={{ color: '#ef4444' }}
+          >
+            {deleteMutation.isPending ? 'Removing…' : '✕ Remove photo'}
+          </button>
+        )}
 
         {/* Stats 2×2 grid */}
         {stats && (

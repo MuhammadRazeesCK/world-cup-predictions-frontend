@@ -42,55 +42,86 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-interface PodiumEntry { rank: number; username: string; total_points: number; accuracy_percentage: number; user_id: string; }
+interface PodiumEntry { rank: number; username: string; total_points: number; accuracy_percentage: number; user_id: string; avatar_url: string | null; }
 
-function PodiumCard({ entry, isMe, baseHeight, onViewPicks }: { entry: PodiumEntry; isMe: boolean; baseHeight: number; onViewPicks: () => void }) {
+function PodiumCard({ entry, isMe, cardHeight, onViewPicks }: { entry: PodiumEntry; isMe: boolean; cardHeight: number; onViewPicks: () => void }) {
   const c = podiumColor[entry.rank as 1|2|3];
+
+  const bgStyle: React.CSSProperties = entry.avatar_url
+    ? {
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.92) 100%), url(${entry.avatar_url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+      }
+    : { background: c.bg };
+
   return (
-    <div className="flex-1 flex flex-col items-center">
-      {/* Info above the platform */}
-      <div className="flex flex-col items-center w-full px-1 mb-2">
+    <div
+      className="flex-1 flex flex-col rounded-2xl overflow-hidden relative"
+      style={{
+        height: `${cardHeight}px`,
+        border: `1px solid ${c.border}`,
+        borderTop: `3px solid ${c.badge}`,
+        boxShadow: `0 4px 32px ${c.glow}`,
+        ...bgStyle,
+      }}
+    >
+      {/* No-photo fallback: centered initial */}
+      {!entry.avatar_url && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span
+            className="font-black select-none"
+            style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '5rem', color: c.badge, opacity: 0.15 }}
+          >
+            {entry.username[0].toUpperCase()}
+          </span>
+        </div>
+      )}
+
+      {/* Top row: rank badge + eye */}
+      <div className="flex items-center justify-between px-3 pt-3">
         <span
-          className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm mb-2 flex-shrink-0"
-          style={{ background: c.badgeBg, color: c.badge, border: `1px solid ${c.border}` }}
+          className="rounded-full flex items-center justify-center font-black flex-shrink-0"
+          style={{
+            width: 28, height: 28,
+            background: 'rgba(0,0,0,0.55)',
+            color: c.badge,
+            border: `1px solid ${c.badge}`,
+            fontFamily: '"Bebas Neue", sans-serif',
+            fontSize: '0.9rem',
+            backdropFilter: 'blur(4px)',
+          }}
         >
           {entry.rank}
         </span>
-        <div className="font-black text-xs uppercase tracking-wide text-center leading-tight mb-1 w-full truncate"
-          style={{ color: isMe ? '#f5b800' : 'rgba(255,255,255,0.85)' }}>
-          {entry.username}
-          {isMe && <span className="block text-[9px] font-bold normal-case" style={{ color: 'rgba(255,255,255,0.35)' }}>you</span>}
-        </div>
-        <div className="font-black text-center" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.5rem', color: c.badge, lineHeight: 1 }}>
-          {entry.total_points}
-          <span className="text-xs font-bold ml-0.5" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'inherit' }}>pts</span>
-        </div>
-        <div className="text-[9px] font-bold uppercase tracking-wide mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-          {entry.accuracy_percentage}% acc
-        </div>
         <button
           onClick={onViewPicks}
-          className="mt-2 w-6 h-6 rounded-lg flex items-center justify-center transition-opacity hover:opacity-100 opacity-40"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+          className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-50"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.15)' }}
           title={`View ${entry.username}'s picks`}
         >
           <EyeIcon />
         </button>
       </div>
-      {/* Podium platform */}
-      <div
-        className="w-full rounded-t-xl flex items-center justify-center"
-        style={{
-          height: `${baseHeight}px`,
-          background: c.bg,
-          border: `1px solid ${c.border}`,
-          borderBottom: 'none',
-          boxShadow: `0 -4px 20px ${c.glow}`,
-        }}
-      >
-        <span className="font-black text-2xl" style={{ fontFamily: '"Bebas Neue", sans-serif', color: c.badge, opacity: 0.18 }}>
-          {entry.rank}
-        </span>
+
+      {/* Bottom: name + pts overlay */}
+      <div className="mt-auto px-3 pb-3">
+        <div
+          className="font-black uppercase leading-tight truncate"
+          style={{ fontSize: '0.72rem', letterSpacing: '0.05em', color: isMe ? '#f5b800' : 'rgba(255,255,255,0.9)' }}
+        >
+          {entry.username}
+        </div>
+        {isMe && (
+          <div className="text-[9px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>you</div>
+        )}
+        <div className="font-black leading-none mt-0.5" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2rem', color: c.badge }}>
+          {entry.total_points}
+          <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'inherit' }}>pts</span>
+        </div>
+        <div className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          {entry.accuracy_percentage}% acc
+        </div>
       </div>
     </div>
   );
@@ -190,16 +221,14 @@ export default function LeaderboardPage() {
             {top3.length > 0 && (
               <div className="flex items-end gap-2">
                 {top3.length === 3 ? (
-                  // Full podium: 2 | 1 | 3 order, bottom-aligned
                   <>
-                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} baseHeight={80}  onViewPicks={() => setViewingUser(top3[1].username)} />
-                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} baseHeight={120} onViewPicks={() => setViewingUser(top3[0].username)} />
-                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} baseHeight={55}  onViewPicks={() => setViewingUser(top3[2].username)} />
+                    <PodiumCard entry={top3[1]} isMe={top3[1].username === user?.username} cardHeight={220} onViewPicks={() => setViewingUser(top3[1].username)} />
+                    <PodiumCard entry={top3[0]} isMe={top3[0].username === user?.username} cardHeight={270} onViewPicks={() => setViewingUser(top3[0].username)} />
+                    <PodiumCard entry={top3[2]} isMe={top3[2].username === user?.username} cardHeight={195} onViewPicks={() => setViewingUser(top3[2].username)} />
                   </>
                 ) : (
-                  // Fewer than 3 players — show in rank order
                   top3.map(e => (
-                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} baseHeight={90} onViewPicks={() => setViewingUser(e.username)} />
+                    <PodiumCard key={e.user_id} entry={e} isMe={e.username === user?.username} cardHeight={180} onViewPicks={() => setViewingUser(e.username)} />
                   ))
                 )}
               </div>
