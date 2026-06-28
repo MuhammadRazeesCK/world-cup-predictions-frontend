@@ -5,12 +5,16 @@ export const predictionsApi = {
     submit: async (
         fixture_id: string,
         predicted_home_goals: number,
-        predicted_away_goals: number
+        predicted_away_goals: number,
+        penalty_home_goals?: number,
+        penalty_away_goals?: number,
     ): Promise<ApiResponse<Prediction>> => {
         const { data } = await apiClient.post('/predictions', {
             fixture_id,
             predicted_home_goals,
             predicted_away_goals,
+            ...(penalty_home_goals !== undefined && { penalty_home_goals }),
+            ...(penalty_away_goals !== undefined && { penalty_away_goals }),
         });
         return data;
     },

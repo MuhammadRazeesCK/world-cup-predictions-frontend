@@ -17,11 +17,15 @@ export function useSubmitPrediction() {
             fixture_id,
             home,
             away,
+            pen_home,
+            pen_away,
         }: {
             fixture_id: string;
             home: number;
             away: number;
-        }) => predictionsApi.submit(fixture_id, home, away),
+            pen_home?: number;
+            pen_away?: number;
+        }) => predictionsApi.submit(fixture_id, home, away, pen_home, pen_away),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['predictions'] });
             queryClient.invalidateQueries({ queryKey: ['fixtures', 'available'] });

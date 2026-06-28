@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { TeamFlag } from '../utils/teams';
 
 interface MatchCardProps { fixture: AvailableFixture; }
-interface PredictionForm { home: number; away: number; }
+interface PredictionForm { home: number; away: number; pen_home: number; pen_away: number; }
 
 function resultLabel(home: number, away: number, homeTeam: string, awayTeam: string) {
   if (home > away) return { text: `${homeTeam} Win`, color: '#4ade80' };
@@ -55,11 +55,13 @@ function GoalStepper({ value, onChange, disabled }: { value: number; onChange: (
 }
 
 const stageStyle: Record<string, { bg: string; text: string }> = {
-  group:   { bg: 'rgba(22,163,74,0.15)',  text: '#4ade80' },
-  round16: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
-  qf:      { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24' },
-  sf:      { bg: 'rgba(239,68,68,0.15)',  text: '#f87171' },
-  final:   { bg: 'rgba(245,184,0,0.18)',  text: '#f5b800' },
+  group:       { bg: 'rgba(22,163,74,0.15)',  text: '#4ade80' },
+  round32:     { bg: 'rgba(14,165,233,0.15)', text: '#38bdf8' },
+  round16:     { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
+  qf:          { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24' },
+  sf:          { bg: 'rgba(239,68,68,0.15)',  text: '#f87171' },
+  third_place: { bg: 'rgba(168,85,247,0.15)', text: '#c084fc' },
+  final:       { bg: 'rgba(245,184,0,0.18)',  text: '#f5b800' },
 };
 
 function Countdown({ closesAt }: { closesAt: string }) {
@@ -88,16 +90,26 @@ export function MatchCard({ fixture }: MatchCardProps) {
     defaultValues: {
       home: userPred?.predicted_home_goals ?? 0,
       away: userPred?.predicted_away_goals ?? 0,
+      pen_home: userPred?.penalty_home_goals ?? 4,
+      pen_away: userPred?.penalty_away_goals ?? 3,
     },
   });
 
   const homeVal = useWatch({ control, name: 'home' });
   const awayVal = useWatch({ control, name: 'away' });
+  const penHomeVal = useWatch({ control, name: 'pen_home' });
+  const penAwayVal = useWatch({ control, name: 'pen_away' });
 
   const onSubmit = async (data: PredictionForm) => {
     setMsg(null);
     try {
-      await submitMutation.mutateAsync({ fixture_id: fixture.id, home: data.home, away: data.away });
+      const sendPen = isKnockout && data.home === data.away && fixture.penalty_enabled;
+      await submitMutation.mutateAsync({
+        fixture_id: fixture.id,
+        home: data.home,
+        away: data.away,
+        ...(sendPen && { pen_home: data.pen_home, pen_away: data.pen_away }),
+      });
       setMsg({ type: 'ok', text: userPred ? 'Prediction updated' : 'Prediction saved' });
       setTimeout(() => setMsg(null), 3000);
     } catch (err: any) {
@@ -108,6 +120,9 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const stg = stageStyle[fixture.stage] || stageStyle.group;
   const isLive = status === 'live';
   const isCompleted = status === 'completed';
+  const isKnockout = fixture.stage !== 'group';
+  const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
+  const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
   return (
     <div
@@ -222,8 +237,53 @@ export function MatchCard({ fixture }: MatchCardProps) {
                   <GoalStepper value={awayVal ?? 0} onChange={(v) => setValue('away', v)} />
                 </div>
 
-                {/* Result preview pill */}
-                {(() => {
+                {/* Result preview pill + penalty section */}
+                {isDrawPrediction ? (
+                  <div className="mb-3 space-y-3">
+                    {fixture.penalty_enabled ? (
+                      <>
+                        {/* Penalty shootout label */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                          <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'rgba(245,184,0,0.7)' }}>⚽ Penalty Shootout</span>
+                          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                        </div>
+                        {/* Penalty steppers */}
+                        <div className="flex items-center justify-center gap-5">
+                          <GoalStepper value={penHomeVal ?? 4} onChange={(v) => setValue('pen_home', v)} />
+                          <span className="font-black text-lg" style={{ color: 'rgba(255,255,255,0.15)', lineHeight: 1 }}>–</span>
+                          <GoalStepper value={penAwayVal ?? 3} onChange={(v) => setValue('pen_away', v)} />
+                        </div>
+                        {/* Penalty result pill */}
+                        {isPenDrawInvalid ? (
+                          <div className="text-center">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                              style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                              ⚠ Penalties can't be a draw
+                            </span>
+                          </div>
+                        ) : (() => {
+                          const penWinner = (penHomeVal ?? 4) > (penAwayVal ?? 3) ? fixture.home_team : fixture.away_team;
+                          return (
+                            <div className="text-center">
+                              <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                                style={{ background: 'rgba(245,184,0,0.1)', color: '#f5b800', border: '1px solid rgba(245,184,0,0.3)' }}>
+                                {penWinner} wins on pens
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <div className="text-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                          ⚠ No draws in knockout rounds
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (() => {
                   const r = resultLabel(homeVal ?? 0, awayVal ?? 0, fixture.home_team, fixture.away_team);
                   return (
                     <div className="text-center mb-3">
@@ -240,7 +300,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                   <Countdown closesAt={fixture.prediction_closes_at} />
                   <button
                     type="submit"
-                    disabled={submitMutation.isPending}
+                    disabled={submitMutation.isPending || isPenDrawInvalid || (isDrawPrediction && !fixture.penalty_enabled)}
                     className="px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40 active:scale-95"
                     style={{ background: '#f5b800', color: '#0a0a0a' }}
                   >

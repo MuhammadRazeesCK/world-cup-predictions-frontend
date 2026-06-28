@@ -7,9 +7,6 @@ import { PlayerPredictionsModal, EyeIcon } from '../components/PlayerPredictions
 import { useAvailableFixtures } from '../hooks/useFixtures';
 import { useUserStats, useLeaderboard } from '../hooks/useLeaderboard';
 import { useAuth } from '../context/AuthContext';
-import { formatKickoffIST, formatStageName } from '../utils/timezone';
-import { TeamFlag } from '../utils/teams';
-import { AvailableFixture } from '../types';
 
 function SpinnerIcon() {
   return (
@@ -80,100 +77,6 @@ function StatCard({ label, value, icon, gold = false }: { label: string; value: 
   );
 }
 
-function NextMatchBanner({ fixture }: { fixture: AvailableFixture }) {
-  const stageLabel = formatStageName(fixture.stage).toUpperCase();
-  // Date only e.g. "28 Jun, 2026"
-  const dateLabel = formatKickoffIST(fixture.kickoff_time).split('·')[0].trim();
-
-  return (
-    <div
-      className="rounded-xl overflow-hidden relative select-none"
-      style={{ height: '170px', background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.09)' }}
-    >
-      {/* Amber glow – home side */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 18% 55%, rgba(190,128,0,0.32) 0%, transparent 60%)', pointerEvents: 'none' }} />
-      {/* Crimson glow – away side */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 82% 55%, rgba(160,25,25,0.28) 0%, transparent 60%)', pointerEvents: 'none' }} />
-      {/* Stadium floor glow */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, rgba(245,184,0,0.08) 0%, transparent 55%)', pointerEvents: 'none' }} />
-
-      {/* FIFA branding */}
-      <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, textAlign: 'center', zIndex: 5 }}>
-        <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase' }}>
-          FIFA World Cup 2026
-        </span>
-      </div>
-
-      {/* Stage badge */}
-      <div style={{ position: 'absolute', top: '10px', right: '12px', zIndex: 6 }}>
-        <span style={{
-          fontSize: '7px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-          color: '#f5b800', background: 'rgba(245,184,0,0.1)', border: '1px solid rgba(245,184,0,0.25)',
-          borderRadius: '4px', padding: '2px 6px',
-        }}>
-          {stageLabel}
-        </span>
-      </div>
-
-      {/* Center divider */}
-      <div style={{
-        position: 'absolute', left: '50%', top: '18%', bottom: '18%', width: '1px',
-        background: 'linear-gradient(to bottom, transparent, rgba(245,184,0,0.22) 40%, rgba(245,184,0,0.22) 60%, transparent)',
-      }} />
-
-      {/* Home team */}
-      <div style={{
-        position: 'absolute', left: '4%', top: '50%', transform: 'translateY(-48%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px',
-        width: '40%', zIndex: 10,
-      }}>
-        <TeamFlag name={fixture.home_team} className="w-12 h-8 rounded shadow-md" />
-        <div style={{
-          fontFamily: '"Bebas Neue", sans-serif', fontSize: '1rem',
-          letterSpacing: '0.07em', color: '#fff',
-          textAlign: 'center', lineHeight: 1.1, textTransform: 'uppercase',
-        }}>
-          {fixture.home_team}
-        </div>
-      </div>
-
-      {/* VS + trophy + date */}
-      <div style={{
-        position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-        zIndex: 10, textAlign: 'center', width: '80px',
-      }}>
-        <div style={{
-          fontFamily: '"Bebas Neue", sans-serif', fontSize: '2.4rem',
-          color: '#f5b800', letterSpacing: '0.04em', lineHeight: 1,
-        }}>
-          VS
-        </div>
-        <div style={{ fontSize: '20px', lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(245,184,0,0.6))' }}>🏆</div>
-        <div style={{ fontSize: '8px', fontWeight: 600, color: 'rgba(255,255,255,0.38)', marginTop: '1px', whiteSpace: 'nowrap' }}>
-          {dateLabel}
-        </div>
-      </div>
-
-      {/* Away team */}
-      <div style={{
-        position: 'absolute', right: '4%', top: '50%', transform: 'translateY(-48%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px',
-        width: '40%', zIndex: 10,
-      }}>
-        <TeamFlag name={fixture.away_team} className="w-12 h-8 rounded shadow-md" />
-        <div style={{
-          fontFamily: '"Bebas Neue", sans-serif', fontSize: '1rem',
-          letterSpacing: '0.07em', color: '#fff',
-          textAlign: 'center', lineHeight: 1.1, textTransform: 'uppercase',
-        }}>
-          {fixture.away_team}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function RankBadge({ rank }: { rank: number }) {
   const colors: Record<number, { bg: string; color: string }> = {
     1: { bg: 'rgba(245,184,0,0.15)', color: '#f5b800' },
@@ -233,11 +136,6 @@ export default function Dashboard() {
             <StatCard label="Accuracy" value={`${stats.accuracy_percentage}%`}      icon={<AccuracyIcon />}          />
             <StatCard label="Exact"    value={stats.exact_predictions}              icon={<ExactIcon />}             />
           </div>
-        )}
-
-        {/* Next Match Banner */}
-        {available && available.length > 0 && (
-          <NextMatchBanner fixture={available[0]} />
         )}
 
         {/* Upcoming matches */}
