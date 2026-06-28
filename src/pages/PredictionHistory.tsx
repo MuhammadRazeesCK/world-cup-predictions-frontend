@@ -76,7 +76,7 @@ function PredictionCard({ item }: { item: PredictionHistoryItem }) {
               >
                 {item.prediction.predicted_home_goals} – {item.prediction.predicted_away_goals}
               </div>
-              {item.prediction.penalty_home_goals !== null && item.prediction.penalty_away_goals !== null && (
+              {item.prediction.penalty_home_goals != null && item.prediction.penalty_away_goals != null && (
                 <div className="text-[9px] font-bold mt-0.5" style={{ color: 'rgba(245,184,0,0.6)' }}>
                   pens {item.prediction.penalty_home_goals}–{item.prediction.penalty_away_goals}
                 </div>
