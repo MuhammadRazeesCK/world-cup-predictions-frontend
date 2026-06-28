@@ -195,7 +195,8 @@ function PredictionsCard({ cardRef, group }: { cardRef: React.RefObject<HTMLDivE
   );
 }
 
-function StandingsCard({ cardRef, entries }: { cardRef: React.RefObject<HTMLDivElement>; entries: LeaderboardEntry[] }) {
+function StandingsCard({ cardRef, entries, scope = 'all' }: { cardRef: React.RefObject<HTMLDivElement>; entries: LeaderboardEntry[]; scope?: 'all' | 'group' | 'knockout' }) {
+  const scopeLabel = scope === 'group' ? 'Group Stage' : scope === 'knockout' ? 'Knockouts' : 'Overall';
   const medals = ['🥇','🥈','🥉'];
   const maxPts = Math.max(...entries.map((e) => e.total_points), 1);
   const rc = (i: number) => i===0 ? D.rank1 : i===1 ? D.rank2 : i===2 ? D.rank3 : D.textMuted;
@@ -214,7 +215,8 @@ function StandingsCard({ cardRef, entries }: { cardRef: React.RefObject<HTMLDivE
       <div style={{ padding:'28px 40px 22px', backgroundImage:D.dots, background:'linear-gradient(180deg, rgba(245,197,24,0.05) 0%, transparent 100%)', borderBottom:`1px solid ${D.border}` }}>
         <div style={{ fontSize:10, fontWeight:900, letterSpacing:'0.22em', color:D.gold, textTransform:'uppercase', marginBottom:8 }}>⚽ WC 2026 Predictions League</div>
         <div style={{ fontSize:38, fontWeight:900, letterSpacing:'-0.03em', lineHeight:1, color:D.text }}>🏆 Standings</div>
-        <div style={{ fontSize:10, color:D.textMuted, marginTop:10, letterSpacing:'0.1em', textTransform:'uppercase' }}>{entries.length} Players · {fmtDate()}</div>
+        <div style={{ fontSize:11, fontWeight:800, color:D.cyan, marginTop:6, letterSpacing:'0.16em', textTransform:'uppercase' }}>{scopeLabel}</div>
+        <div style={{ fontSize:10, color:D.textMuted, marginTop:6, letterSpacing:'0.1em', textTransform:'uppercase' }}>{entries.length} Players · {fmtDate()}</div>
       </div>
       {podium.length > 0 && (
         <div style={{ padding:'40px 40px 0', display:'flex', justifyContent:'center', alignItems:'flex-end', gap:8, borderBottom:`1px solid ${D.border}`, backgroundImage:D.dots, background:'linear-gradient(180deg, rgba(245,197,24,0.03) 0%, transparent 60%)' }}>
@@ -362,19 +364,20 @@ export function ExportTab() {
     queryFn: () => adminApi.getPredictions().then((r) => r.data ?? []),
     staleTime: 30_000,
   });
-  const { data: leaderboard, isLoading: loadingLB } = useQuery({
-    queryKey: ['leaderboard', 'all'],
-    queryFn: () => leaderboardApi.getLeaderboard({ limit: 200 }).then((r) => r.data),
-    staleTime: 30_000,
-  });
   const [predFixtureId, setPredFixtureId]       = useState('');
   const [winnersFixtureId, setWinnersFixtureId] = useState('');
+  const [standingsScope, setStandingsScope] = useState<'all' | 'group' | 'knockout'>('all');
   const [modal, setModal]   = useState<ModalType>(null);
   const [exporting, setExporting] = useState(false);
   const [sharing, setSharing]   = useState(false);
   const [copied, setCopied]     = useState(false);
   const predsRef    = useRef<HTMLDivElement>(null);
   const standRef    = useRef<HTMLDivElement>(null);
+  const { data: leaderboard, isLoading: loadingLB } = useQuery({
+    queryKey: ['leaderboard', standingsScope],
+    queryFn: () => leaderboardApi.getLeaderboard({ limit: 200, stage_group: standingsScope }).then((r) => r.data),
+    staleTime: 30_000,
+  });
   const winnersRef  = useRef<HTMLDivElement>(null);
   const completedGroups      = predGroups.filter((g) => g.fixture.status === 'completed' && g.fixture.home_score !== null && g.predictions.length > 0);
   const selectedPredGroup    = predGroups.find((g) => g.fixture.id === predFixtureId);
@@ -450,6 +453,22 @@ export function ExportTab() {
       </Card>
 
       <Card icon="🏆" title="Standings" desc="Full leaderboard with podium for top 3, points, accuracy, and more.">
+        <div className="flex gap-2">
+          {(['all', 'group', 'knockout'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStandingsScope(s)}
+              className="flex-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+              style={{
+                background: standingsScope === s ? 'rgba(245,197,24,0.15)' : 'rgba(255,255,255,0.04)',
+                color: standingsScope === s ? '#f5c518' : 'rgba(255,255,255,0.4)',
+                border: standingsScope === s ? '1px solid rgba(245,197,24,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              {s === 'all' ? 'Overall' : s === 'group' ? 'Group Stage' : 'Knockouts'}
+            </button>
+          ))}
+        </div>
         {loadingLB ? <div className="text-text-secondary text-sm">Loading…</div> : (
           <Button onClick={() => setModal('standings')}>Preview &amp; Download PNG{entries.length > 0 ? ` (${entries.length} players)` : ''}</Button>
         )}
@@ -485,13 +504,13 @@ export function ExportTab() {
         )}
       </Modal>
 
-      <Modal isOpen={modal==='standings'} onClose={() => setModal(null)} title="Standings" size="lg">
+      <Modal isOpen={modal==='standings'} onClose={() => setModal(null)} title={standingsScope === 'all' ? 'Overall Standings' : standingsScope === 'group' ? 'Group Stage Standings' : 'Knockout Standings'} size="lg">
         {entries.length > 0 ? (
           <div className="space-y-4">
-            <div style={{ border:'1px solid #1a2a3a', borderRadius:8, overflow:'hidden' }}><ScaledPreview scale={PREVIEW_SCALE} width={CARD_W}><StandingsCard cardRef={standRef} entries={entries} /></ScaledPreview></div>
+            <div style={{ border:'1px solid #1a2a3a', borderRadius:8, overflow:'hidden' }}><ScaledPreview scale={PREVIEW_SCALE} width={CARD_W}><StandingsCard cardRef={standRef} entries={entries} scope={standingsScope} /></ScaledPreview></div>
             {copied && <div className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2" style={{ background:'rgba(37,211,102,0.12)', border:'1px solid rgba(37,211,102,0.3)', color:'#25d366' }}>📋 Image copied! Switch to WhatsApp Web and paste (⌘V / Ctrl+V)</div>}
             <div className="flex gap-2">
-              <Button isLoading={exporting} onClick={() => dl(standRef, `wc2026-standings-${new Date().toISOString().split('T')[0]}.png`)}>⬇ Download PNG</Button>
+              <Button isLoading={exporting} onClick={() => dl(standRef, `wc2026-standings-${standingsScope}-${new Date().toISOString().split('T')[0]}.png`)}>⬇ Download PNG</Button>
               <WABtn divRef={standRef} />
             </div>
           </div>
