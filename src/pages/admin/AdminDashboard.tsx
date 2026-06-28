@@ -317,6 +317,16 @@ function FixtureList() {
                       e.target.value = '';
                     }} />
                   </label>
+                  {f.poster_url && (
+                    <button
+                      onClick={() => adminApi.deletePoster(f.id).then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] }))}
+                      className="text-xs mr-2 hover:underline"
+                      style={{ color: '#f87171' }}
+                      title="Delete poster"
+                    >
+                      🗑
+                    </button>
+                  )}
                   {f.status === 'completed' && (
                     <button
                       onClick={() => rescoreMutation.mutate(f.id)}

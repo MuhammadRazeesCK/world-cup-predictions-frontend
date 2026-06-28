@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { MatchCard } from '../components/MatchCard';
@@ -106,13 +106,21 @@ export default function Dashboard() {
   // Poster banner: show if upcoming fixture has a poster_url not yet dismissed
   const posterFixture = available?.find(f => f.poster_url);
   const posterKey = posterFixture ? `poster_dismissed_${posterFixture.id}_${posterFixture.poster_url?.slice(-12)}` : null;
-  const [posterDismissed, setPosterDismissed] = useState(() =>
-    posterKey ? !!sessionStorage.getItem(posterKey) : true
-  );
+  const [posterDismissed, setPosterDismissed] = useState(true);
+
+  // Re-check localStorage whenever posterKey changes (data load or poster replaced by admin)
+  useEffect(() => {
+    if (posterKey) {
+      setPosterDismissed(!!localStorage.getItem(posterKey));
+    } else {
+      setPosterDismissed(true);
+    }
+  }, [posterKey]);
+
   const showPoster = !!posterFixture && !posterDismissed;
 
   function dismissPoster() {
-    if (posterKey) sessionStorage.setItem(posterKey, '1');
+    if (posterKey) localStorage.setItem(posterKey, '1');
     setPosterDismissed(true);
   }
 
