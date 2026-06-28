@@ -90,8 +90,8 @@ export function MatchCard({ fixture }: MatchCardProps) {
     defaultValues: {
       home: userPred?.predicted_home_goals ?? 0,
       away: userPred?.predicted_away_goals ?? 0,
-      pen_home: userPred?.penalty_home_goals ?? 4,
-      pen_away: userPred?.penalty_away_goals ?? 3,
+      pen_home: userPred?.penalty_home_goals ?? 0,
+      pen_away: userPred?.penalty_away_goals ?? 0,
     },
   });
 
@@ -126,17 +126,24 @@ export function MatchCard({ fixture }: MatchCardProps) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden relative"
       style={{
-        background: '#111111',
-        border: isLive ? '1px solid rgba(22,163,74,0.4)' : '1px solid rgba(255,255,255,0.07)',
+        background: '#0d0d0d',
+        border: isLive ? '1px solid rgba(22,163,74,0.4)' : '1px solid rgba(255,255,255,0.08)',
         boxShadow: isLive ? '0 0 20px rgba(22,163,74,0.08)' : 'none',
       }}
     >
+      {/* Poster spotlight glows */}
+      {!isCompleted && (
+        <>
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 15% 40%, rgba(180,120,0,0.18) 0%, transparent 55%)', pointerEvents: 'none', zIndex: 0 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 85% 40%, rgba(140,20,20,0.15) 0%, transparent 55%)', pointerEvents: 'none', zIndex: 0 }} />
+        </>
+      )}
       {/* Top bar */}
       <div
-        className="flex items-center justify-between px-4 py-2"
-        style={{ background: 'rgba(0,0,0,0.35)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        className="flex items-center justify-between px-4 py-2 relative"
+        style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(255,255,255,0.06)', zIndex: 1 }}
       >
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold rounded-md px-2 py-0.5 uppercase tracking-wide" style={{ background: stg.bg, color: stg.text }}>
@@ -164,13 +171,13 @@ export function MatchCard({ fixture }: MatchCardProps) {
       </div>
 
       {/* Teams + Score */}
-      <div className="px-4 py-3.5">
+      <div className="px-4 py-5 relative" style={{ zIndex: 1 }}>
         <div className="flex items-center justify-center gap-3">
 
           {/* Home */}
-          <div className="flex flex-col items-center gap-2" style={{ width: '38%' }}>
-            <TeamFlag name={fixture.home_team} className="w-12 h-8 rounded-md shadow-lg" />
-            <div className="font-black text-xs uppercase tracking-wide text-center leading-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          <div className="flex flex-col items-center gap-2.5" style={{ width: '38%' }}>
+            <TeamFlag name={fixture.home_team} className="w-14 h-10 rounded-md shadow-lg" />
+            <div className="font-black text-sm uppercase tracking-wide text-center leading-tight" style={{ color: '#ffffff', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '0.06em' }}>
               {fixture.home_team}
             </div>
           </div>
@@ -182,14 +189,14 @@ export function MatchCard({ fixture }: MatchCardProps) {
                 <div className="flex items-center gap-1">
                   <span
                     className="tabular-nums w-8 text-center"
-                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.9rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
+                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2.2rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
                   >
                     {fixture.home_score}
                   </span>
                   <span className="font-black text-base" style={{ color: 'rgba(255,255,255,0.2)' }}>:</span>
                   <span
                     className="tabular-nums w-8 text-center"
-                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.9rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
+                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2.2rem', lineHeight: 1, color: isCompleted ? '#f5b800' : '#4ade80' }}
                   >
                     {fixture.away_score}
                   </span>
@@ -206,17 +213,17 @@ export function MatchCard({ fixture }: MatchCardProps) {
               </>
             ) : (
               <div className="flex flex-col items-center gap-1.5">
-                <div className="px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.1rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>VS</span>
+                <div className="px-4 py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.3rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.12em' }}>VS</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Away */}
-          <div className="flex flex-col items-center gap-2" style={{ width: '38%' }}>
-            <TeamFlag name={fixture.away_team} className="w-12 h-8 rounded-md shadow-lg" />
-            <div className="font-black text-xs uppercase tracking-wide text-center leading-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          <div className="flex flex-col items-center gap-2.5" style={{ width: '38%' }}>
+            <TeamFlag name={fixture.away_team} className="w-14 h-10 rounded-md shadow-lg" />
+            <div className="font-black text-sm uppercase tracking-wide text-center leading-tight" style={{ color: '#ffffff', fontFamily: '"Bebas Neue", sans-serif', letterSpacing: '0.06em' }}>
               {fixture.away_team}
             </div>
           </div>
@@ -226,7 +233,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
 
       {/* Prediction zone */}
       {!isAdmin && (
-        <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-4 pb-4 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', zIndex: 1 }}>
           <div className="pt-3">
             {pw.is_open && !isLive ? (
               <form onSubmit={handleSubmit(onSubmit)}>
@@ -250,9 +257,9 @@ export function MatchCard({ fixture }: MatchCardProps) {
                         </div>
                         {/* Penalty steppers */}
                         <div className="flex items-center justify-center gap-5">
-                          <GoalStepper value={penHomeVal ?? 4} onChange={(v) => setValue('pen_home', v)} />
+                          <GoalStepper value={penHomeVal ?? 0} onChange={(v) => setValue('pen_home', v)} />
                           <span className="font-black text-lg" style={{ color: 'rgba(255,255,255,0.15)', lineHeight: 1 }}>–</span>
-                          <GoalStepper value={penAwayVal ?? 3} onChange={(v) => setValue('pen_away', v)} />
+                          <GoalStepper value={penAwayVal ?? 0} onChange={(v) => setValue('pen_away', v)} />
                         </div>
                         {/* Penalty result pill */}
                         {isPenDrawInvalid ? (
@@ -263,7 +270,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                             </span>
                           </div>
                         ) : (() => {
-                          const penWinner = (penHomeVal ?? 4) > (penAwayVal ?? 3) ? fixture.home_team : fixture.away_team;
+                          const penWinner = (penHomeVal ?? 0) > (penAwayVal ?? 0) ? fixture.home_team : fixture.away_team;
                           return (
                             <div className="text-center">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
