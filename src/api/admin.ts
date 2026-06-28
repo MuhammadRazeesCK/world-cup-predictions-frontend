@@ -109,6 +109,8 @@ export const adminApi = {
             username: string;
             home_goals: number;
             away_goals: number;
+            pen_home_goals: number | null;
+            pen_away_goals: number | null;
             result: string | null;
             points: number | null;
             predicted_at: string;

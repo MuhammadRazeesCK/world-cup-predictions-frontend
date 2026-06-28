@@ -816,6 +816,11 @@ function AllPredictions() {
                       <td className="px-4 py-2 text-text-primary font-medium">{p.username}</td>
                       <td className="px-3 py-2 text-center font-mono text-text-primary">
                         {p.home_goals}–{p.away_goals}
+                        {p.pen_home_goals != null && (
+                          <div className="text-[10px] text-amber-400/80 font-medium mt-0.5">
+                            pens {p.pen_home_goals}–{p.pen_away_goals}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-center">{resultBadge(p.result)}</td>
                       <td className="px-3 py-2 text-center">

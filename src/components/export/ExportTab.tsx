@@ -165,7 +165,12 @@ function PredictionsCard({ cardRef, group }: { cardRef: React.RefObject<HTMLDivE
               <div key={`${p.username}-${i}`} style={{ display:'grid', gridTemplateColumns:'34px 1fr 86px 136px 68px', padding:'12px 16px', alignItems:'center', gap:8, background: i%2===0 ? 'rgba(255,255,255,0.018)' : 'transparent', borderTop: i>0 ? `1px solid ${D.border}` : 'none' }}>
                 <Avatar name={p.username} size={28} />
                 <div style={{ fontSize:14, color:D.textDim, fontWeight:600 }}>{p.username}</div>
-                <div style={{ textAlign:'center', fontSize:18, fontWeight:800, fontFamily:'ui-monospace,"SF Mono",monospace', color:D.text, letterSpacing:'-0.01em' }}>{p.home_goals}–{p.away_goals}</div>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:18, fontWeight:800, fontFamily:'ui-monospace,"SF Mono",monospace', color:D.text, letterSpacing:'-0.01em', lineHeight:1 }}>{p.home_goals}–{p.away_goals}</div>
+                  {(p as any).pen_home_goals != null && (
+                    <div style={{ fontSize:9, fontWeight:700, color:D.gold, marginTop:3, letterSpacing:'0.06em', fontFamily:'ui-monospace,"SF Mono",monospace' }}>pens {(p as any).pen_home_goals}–{(p as any).pen_away_goals}</div>
+                  )}
+                </div>
                 <div style={{ textAlign:'center' }}>
                   {rc ? (
                     <span style={{ fontSize:10, fontWeight:800, padding:'4px 11px', borderRadius:20, color:rc.color, background:rc.bg, border:`1px solid ${rc.border}`, letterSpacing:'0.08em', whiteSpace:'nowrap', display:'inline-block' }}>{rc.label}</span>
