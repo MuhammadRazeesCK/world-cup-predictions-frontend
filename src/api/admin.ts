@@ -46,6 +46,20 @@ export const adminApi = {
         return data;
     },
 
+    uploadPoster: async (fixtureId: string, file: File): Promise<ApiResponse<{ poster_url: string }>> => {
+        const formData = new FormData();
+        formData.append('poster', file);
+        const { data } = await apiClient.post(`/admin/fixtures/${fixtureId}/poster`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return data;
+    },
+
+    deletePoster: async (fixtureId: string): Promise<ApiResponse<null>> => {
+        const { data } = await apiClient.delete(`/admin/fixtures/${fixtureId}/poster`);
+        return data;
+    },
+
     getFixtures: async (): Promise<ApiResponse<(Fixture & { prediction_count: number })[]>> => {
         const { data } = await apiClient.get('/admin/fixtures');
         return data;

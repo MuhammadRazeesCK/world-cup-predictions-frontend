@@ -309,6 +309,14 @@ function FixtureList() {
                 <td className="py-2 text-right text-text-secondary">{f.prediction_count}</td>
                 <td className="py-2 text-right">
                   <button onClick={() => setEditFixture(f)} className="text-accent hover:underline text-xs mr-2">Edit</button>
+                  <label className="text-xs mr-2 cursor-pointer hover:underline" style={{ color: f.poster_url ? '#4ade80' : '#94a3b8' }} title={f.poster_url ? 'Replace poster' : 'Upload poster'}>
+                    {f.poster_url ? '🖼' : '📷'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) adminApi.uploadPoster(f.id, file).then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] }));
+                      e.target.value = '';
+                    }} />
+                  </label>
                   {f.status === 'completed' && (
                     <button
                       onClick={() => rescoreMutation.mutate(f.id)}
@@ -385,6 +393,11 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
   const [error, setError] = useState('');
   const [homeScore, setHomeScore] = useState<number>(fixture.home_score ?? 0);
   const [awayScore, setAwayScore] = useState<number>(fixture.away_score ?? 0);
+  const [penHomeScore, setPenHomeScore] = useState<number>(0);
+  const [penAwayScore, setPenAwayScore] = useState<number>(0);
+  const isKnockout = fixture.stage !== 'group';
+  const isDraw = homeScore === awayScore;
+  const showPenalty = isKnockout && isDraw && (fixture as any).penalty_enabled;
   const { register, handleSubmit } = useForm({
     defaultValues: {
       home_team: fixture.home_team,
@@ -399,6 +412,7 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
       ...data,
       home_score: homeScore,
       away_score: awayScore,
+      ...(showPenalty && { penalty_home_score: penHomeScore, penalty_away_score: penAwayScore }),
     }),
     onSuccess,
     onError: (err: any) => setError(err.response?.data?.error || 'Update failed'),
@@ -470,6 +484,25 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
             </div>
           </div>
         </div>
+        {showPenalty && (
+          <div>
+            <label className="label">Penalty Shootout Score</label>
+            <div className="flex items-center gap-4 mt-1">
+              <div className="text-center">
+                <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>{fixture.home_team}</div>
+                <ScoreStepper value={penHomeScore} onChange={setPenHomeScore} />
+              </div>
+              <span className="font-black text-2xl" style={{ color: '#3d5a80' }}>-</span>
+              <div className="text-center">
+                <div className="text-[10px] font-bold uppercase mb-2" style={{ color: '#6b89b4' }}>{fixture.away_team}</div>
+                <ScoreStepper value={penAwayScore} onChange={setPenAwayScore} />
+              </div>
+            </div>
+            {penHomeScore === penAwayScore && (
+              <p className="text-xs mt-1" style={{ color: '#f87171' }}>⚠ Penalty shootout can't end in a draw</p>
+            )}
+          </div>
+        )}
         <div className="flex gap-2">
           <Button type="submit" isLoading={mutation.isPending}>Save Changes</Button>
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>

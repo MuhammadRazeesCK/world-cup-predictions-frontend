@@ -103,6 +103,19 @@ export default function Dashboard() {
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
+  // Poster banner: show if upcoming fixture has a poster_url not yet dismissed
+  const posterFixture = available?.find(f => f.poster_url);
+  const posterKey = posterFixture ? `poster_dismissed_${posterFixture.id}_${posterFixture.poster_url?.slice(-12)}` : null;
+  const [posterDismissed, setPosterDismissed] = useState(() =>
+    posterKey ? !!sessionStorage.getItem(posterKey) : true
+  );
+  const showPoster = !!posterFixture && !posterDismissed;
+
+  function dismissPoster() {
+    if (posterKey) sessionStorage.setItem(posterKey, '1');
+    setPosterDismissed(true);
+  }
+
   return (
     <div className="min-h-screen pb-20 sm:pb-8" style={{ background: '#0a0a0a' }}>
       <Header />
@@ -237,6 +250,35 @@ export default function Dashboard() {
       </main>
       <Footer />
       {viewingUser && <PlayerPredictionsModal username={viewingUser} onClose={() => setViewingUser(null)} />}
+
+      {/* Match Poster Banner */}
+      {showPoster && posterFixture && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.85)', zIndex: 50 }}
+          onClick={dismissPoster}
+        >
+          <div
+            className="relative mx-4"
+            style={{ maxWidth: '420px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={posterFixture.poster_url!}
+              alt={`${posterFixture.home_team} vs ${posterFixture.away_team}`}
+              className="w-full rounded-2xl shadow-2xl"
+              style={{ display: 'block' }}
+            />
+            <button
+              onClick={dismissPoster}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

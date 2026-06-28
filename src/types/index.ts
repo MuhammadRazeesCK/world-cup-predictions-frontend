@@ -31,6 +31,7 @@ export interface Fixture {
     prediction_closes_at: string;
     api_fixture_id: number | null;
     penalty_enabled: boolean;
+    poster_url: string | null;
 }
 
 export interface PredictionWindow {
@@ -78,6 +79,8 @@ export interface PredictionHistoryItem {
     prediction: {
         predicted_home_goals: number;
         predicted_away_goals: number;
+        penalty_home_goals: number | null;
+        penalty_away_goals: number | null;
         predicted_at: string;
     };
     result: {
