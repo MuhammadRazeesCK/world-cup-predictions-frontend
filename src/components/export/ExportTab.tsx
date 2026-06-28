@@ -15,7 +15,7 @@ const PREVIEW_SCALE = 0.67;
 function getFlag(n: string): string { return WC2026_TEAMS.find((t) => t.name === n)?.flag ?? '🏳️'; }
 function fmtDate(d: Date = new Date()): string { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 function stageName(s: string): string {
-  const m: Record<string,string> = { group:'Group Stage', round16:'Round of 16', qf:'Quarter-Final', sf:'Semi-Final', final:'Final' };
+  const m: Record<string,string> = { group:'Group Stage', round32:'Round of 32', round16:'Round of 16', qf:'Quarter-Final', sf:'Semi-Final', third_place:'Third Place', final:'Final' };
   return m[s] ?? s;
 }
 

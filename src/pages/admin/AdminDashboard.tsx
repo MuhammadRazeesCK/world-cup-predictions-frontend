@@ -33,15 +33,16 @@ function toISO(datetimeLocal: string, offset: string): string {
   return `${datetimeLocal}:00${offset}`;
 }
 
-const STAGES = ['group', 'round16', 'qf', 'sf', 'final'];
+const STAGES = ['group', 'round32', 'round16', 'qf', 'sf', 'third_place', 'final'];
 
 interface FixtureForm {
   match_number: number;
   home_team: string;
   away_team: string;
-  kickoff_date: string;   // datetime-local value
-  kickoff_tz: string;     // timezone offset e.g. +05:30
+  kickoff_date: string;
+  kickoff_tz: string;
   stage: string;
+  penalty_enabled: boolean;
 }
 
 function UploadSection() {
@@ -165,7 +166,7 @@ function CreateFixtureForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Match #</label>
-            <input type="number" min={1} max={64} className="input" {...register('match_number', { required: true, min: 1, max: 64 })} />
+            <input type="number" min={1} className="input" {...register('match_number', { required: true, min: 1 })} />
           </div>
           <div>
             <label className="label">Stage</label>
@@ -218,6 +219,11 @@ function CreateFixtureForm() {
             </p>
           )}
         </div>
+
+        <label className="flex items-center gap-2 cursor-pointer select-none text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <input type="checkbox" {...register('penalty_enabled')} className="w-4 h-4 accent-yellow-400" />
+          Penalty shootout enabled (knockout matches only)
+        </label>
 
         <Button type="submit" isLoading={mutation.isPending} fullWidth>
           Create Fixture

@@ -56,9 +56,11 @@ export function isWindowOpen(closesAt: string): boolean {
 export function formatStageName(stage: string): string {
     const map: Record<string, string> = {
         group: 'Group',
+        round32: 'Round of 32',
         round16: 'Round of 16',
         qf: 'Quarter-Final',
         sf: 'Semi-Final',
+        third_place: 'Third Place',
         final: 'Final',
     };
     return map[stage] || stage;

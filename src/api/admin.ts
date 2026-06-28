@@ -19,6 +19,7 @@ export const adminApi = {
         away_team: string;
         kickoff_time: string;
         stage: string;
+        penalty_enabled?: boolean;
     }): Promise<ApiResponse<Fixture>> => {
         const { data } = await apiClient.post('/admin/fixtures', fixture);
         return data;
