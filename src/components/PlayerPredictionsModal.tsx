@@ -5,9 +5,10 @@ import { PredictionHistoryItem } from '../types';
 import { formatKickoffIST, formatStageName } from '../utils/timezone';
 
 const resultConfig: Record<string, { borderColor: string; label: string; labelBg: string; labelColor: string; ptColor: string }> = {
-  exact:  { borderColor: '#16a34a', label: 'Exact Score',    labelBg: 'rgba(22,163,74,0.12)',  labelColor: '#4ade80', ptColor: '#f5b800' },
-  winner: { borderColor: '#3b82f6', label: 'Correct Winner', labelBg: 'rgba(59,130,246,0.12)', labelColor: '#60a5fa', ptColor: '#f5b800' },
-  wrong:  { borderColor: '#ef4444', label: 'Wrong',          labelBg: 'rgba(239,68,68,0.1)',   labelColor: '#f87171', ptColor: 'rgba(255,255,255,0.3)' },
+  exact:        { borderColor: '#16a34a', label: 'Exact Score',    labelBg: 'rgba(22,163,74,0.12)',   labelColor: '#4ade80', ptColor: '#f5b800' },
+  winner:       { borderColor: '#3b82f6', label: 'Correct Winner', labelBg: 'rgba(59,130,246,0.12)',  labelColor: '#60a5fa', ptColor: '#f5b800' },
+  draw_correct: { borderColor: '#f97316', label: '120’ Draw +2',   labelBg: 'rgba(249,115,22,0.1)',   labelColor: '#fb923c', ptColor: '#f5b800' },
+  wrong:        { borderColor: '#ef4444', label: 'Wrong',          labelBg: 'rgba(239,68,68,0.1)',    labelColor: '#f87171', ptColor: 'rgba(255,255,255,0.3)' },
 };
 
 function MiniPredCard({ item }: { item: PredictionHistoryItem }) {
@@ -37,6 +38,11 @@ function MiniPredCard({ item }: { item: PredictionHistoryItem }) {
               <div className="font-black tabular-nums" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.4rem', lineHeight: 1, color: 'rgba(255,255,255,0.55)' }}>
                 {item.prediction.predicted_home_goals} – {item.prediction.predicted_away_goals}
               </div>
+              {item.prediction.penalty_home_goals != null && (
+                <div className="text-[9px] font-bold mt-0.5" style={{ color: 'rgba(245,184,0,0.7)' }}>
+                  pens {item.prediction.penalty_home_goals}–{item.prediction.penalty_away_goals}
+                </div>
+              )}
             </div>
             {item.result.home_goals !== undefined && (
               <>

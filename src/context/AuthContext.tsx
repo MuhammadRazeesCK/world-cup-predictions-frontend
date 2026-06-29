@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         localStorage.setItem('authToken', newToken);
         localStorage.setItem('authUser', JSON.stringify(userData));
-        queryClient.invalidateQueries();
+        queryClient.clear();
     }, [queryClient]);
 
     const signup = useCallback(async (email: string, username: string, password: string) => {
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         localStorage.setItem('authToken', newToken);
         localStorage.setItem('authUser', JSON.stringify(userData));
-        queryClient.invalidateQueries();
+        queryClient.clear();
     }, [queryClient]);
 
     const logout = useCallback(async () => {

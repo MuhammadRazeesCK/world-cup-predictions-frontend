@@ -274,7 +274,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                           return (
                             <div className="text-center">
                               <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
-                                style={{ background: 'rgba(245,184,0,0.1)', color: '#f5b800', border: '1px solid rgba(245,184,0,0.3)' }}>
+                                style={{ background: 'rgba(22,163,74,0.12)', color: '#4ade80', border: '1px solid rgba(22,163,74,0.3)' }}>
                                 {penWinner} wins on pens
                               </span>
                             </div>
