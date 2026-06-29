@@ -2,7 +2,7 @@
 
 export type FixtureStage = 'group' | 'round32' | 'round16' | 'qf' | 'sf' | 'third_place' | 'final';
 export type FixtureStatus = 'scheduled' | 'live' | 'completed';
-export type PredictionResult = 'exact' | 'winner' | 'wrong' | 'pending';
+export type PredictionResult = 'exact' | 'winner' | 'wrong' | 'draw_correct' | 'pending';
 
 export interface User {
     id: string;

@@ -7,15 +7,16 @@ import { formatKickoffIST, formatStageName } from '../utils/timezone';
 
 const filterTabs = [
   { key: '', label: 'All' },
-  { key: 'exact,winner', label: 'Correct' },
+  { key: 'exact,winner,draw_correct', label: 'Correct' },
   { key: 'wrong', label: 'Wrong' },
 ];
 
 const resultConfig: Record<string, { borderColor: string; label: string; labelBg: string; labelColor: string; ptColor: string; pulse: boolean }> = {
-  exact:   { borderColor: '#16a34a', label: 'Exact Score',      labelBg: 'rgba(22,163,74,0.12)',   labelColor: '#4ade80', ptColor: '#f5b800', pulse: false },
-  winner:  { borderColor: '#3b82f6', label: 'Correct Winner',   labelBg: 'rgba(59,130,246,0.12)',  labelColor: '#60a5fa', ptColor: '#f5b800', pulse: false },
-  wrong:   { borderColor: '#ef4444', label: 'Wrong',            labelBg: 'rgba(239,68,68,0.1)',    labelColor: '#f87171', ptColor: 'rgba(255,255,255,0.3)', pulse: false },
-  pending: { borderColor: 'rgba(255,255,255,0.15)', label: 'Pending', labelBg: 'rgba(255,255,255,0.06)', labelColor: 'rgba(255,255,255,0.4)', ptColor: 'rgba(255,255,255,0.3)', pulse: true },
+  exact:        { borderColor: '#16a34a', label: 'Exact Score',      labelBg: 'rgba(22,163,74,0.12)',    labelColor: '#4ade80', ptColor: '#f5b800', pulse: false },
+  winner:       { borderColor: '#3b82f6', label: 'Correct Winner',   labelBg: 'rgba(59,130,246,0.12)',   labelColor: '#60a5fa', ptColor: '#f5b800', pulse: false },
+  draw_correct: { borderColor: '#f97316', label: '120’ Draw (+2)',    labelBg: 'rgba(249,115,22,0.1)',    labelColor: '#fb923c', ptColor: '#f5b800', pulse: false },
+  wrong:        { borderColor: '#ef4444', label: 'Wrong',            labelBg: 'rgba(239,68,68,0.1)',     labelColor: '#f87171', ptColor: 'rgba(255,255,255,0.3)', pulse: false },
+  pending:      { borderColor: 'rgba(255,255,255,0.15)', label: 'Pending', labelBg: 'rgba(255,255,255,0.06)', labelColor: 'rgba(255,255,255,0.4)', ptColor: 'rgba(255,255,255,0.3)', pulse: true },
 };
 
 function SpinnerIcon() {

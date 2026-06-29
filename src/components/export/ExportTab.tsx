@@ -129,9 +129,10 @@ function MatchBanner({ fixture: f }: { fixture: FixtureGroup['fixture'] }) {
 function PredictionsCard({ cardRef, group }: { cardRef: React.RefObject<HTMLDivElement>; group: FixtureGroup }) {
   const { fixture: f, predictions } = group;
   const RC = {
-    exact:  { label:'🎯 EXACT',  color:D.green, bg:D.greenBg, border:D.greenBorder },
-    winner: { label:'✅ RESULT', color:D.blue,  bg:D.blueBg,  border:D.blueBorder  },
-    wrong:  { label:'❌ MISSED', color:D.red,   bg:D.redBg,   border:D.redBorder   },
+    exact:        { label:'🎯 EXACT',    color:D.green, bg:D.greenBg, border:D.greenBorder },
+    winner:       { label:'✅ RESULT',   color:D.blue,  bg:D.blueBg,  border:D.blueBorder  },
+    draw_correct: { label:'🕐 120′ +2', color:'#fb923c', bg:'rgba(249,115,22,0.08)', border:'rgba(249,115,22,0.22)' },
+    wrong:        { label:'❌ MISSED',  color:D.red,   bg:D.redBg,   border:D.redBorder   },
   };
   const ptColor = (pts: number | null) => pts === 8 ? D.gold : pts === 3 ? D.blue : D.textMuted;
   return (

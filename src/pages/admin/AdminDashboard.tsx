@@ -733,9 +733,10 @@ function AllPredictions() {
   const resultBadge = (result: string | null) => {
     if (!result) return <span className="text-slate-500 text-xs">–</span>;
     const map: Record<string, { label: string; cls: string }> = {
-      exact:  { label: '🎯 Exact',  cls: 'bg-green-900 text-green-300' },
-      winner: { label: '✅ Winner', cls: 'bg-blue-900 text-blue-300' },
-      wrong:  { label: '❌ Wrong',  cls: 'bg-red-900 text-red-300' },
+      exact:        { label: '🎯 Exact',    cls: 'bg-green-900 text-green-300' },
+      winner:       { label: '✅ Winner',   cls: 'bg-blue-900 text-blue-300' },
+      draw_correct: { label: '🕐 120′ +2',  cls: 'bg-orange-900 text-orange-300' },
+      wrong:        { label: '❌ Wrong',    cls: 'bg-red-900 text-red-300' },
     };
     const b = map[result] ?? { label: result, cls: 'bg-slate-700 text-slate-300' };
     return <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${b.cls}`}>{b.label}</span>;
