@@ -125,4 +125,19 @@ export const adminApi = {
         const { data } = await apiClient.post(`/admin/fixtures/${id}/rescore`);
         return data;
     },
+
+    setAnnouncement: async (file: File | null, message: string): Promise<any> => {
+        const form = new FormData();
+        if (file) form.append('image', file);
+        if (message.trim()) form.append('message', message.trim());
+        const { data } = await apiClient.post('/admin/announcement', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return data;
+    },
+
+    clearAnnouncement: async (): Promise<any> => {
+        const { data } = await apiClient.delete('/admin/announcement');
+        return data;
+    },
 };

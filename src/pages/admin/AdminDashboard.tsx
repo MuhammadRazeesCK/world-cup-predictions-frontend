@@ -942,8 +942,120 @@ function AllPredictions() {
   );
 }
 
+function AnnouncementManager() {
+  const queryClient = useQueryClient();
+  const [message, setMessage] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const { data: current, isLoading } = useQuery({
+    queryKey: ['admin', 'announcement'],
+    queryFn: () => adminApi.clearAnnouncement().then(() => null).catch(() => null), // just a placeholder
+    enabled: false,
+  });
+  // Fetch current announcement separately
+  const { data: currentAnnouncement } = useQuery({
+    queryKey: ['announcement'],
+    queryFn: async () => {
+      const { data } = await (await import('../../api/client')).default.get('/announcements/current');
+      return data.data;
+    },
+    staleTime: 10_000,
+  });
+
+  const setMutation = useMutation({
+    mutationFn: () => adminApi.setAnnouncement(file, message),
+    onSuccess: () => {
+      setAlert({ type: 'success', message: 'Announcement published! All users will see it on next visit.' });
+      queryClient.invalidateQueries({ queryKey: ['announcement'] });
+      setMessage(''); setFile(null); setPreview(null);
+    },
+    onError: (err: any) => setAlert({ type: 'error', message: err.response?.data?.error || 'Failed to publish' }),
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: adminApi.clearAnnouncement,
+    onSuccess: () => {
+      setAlert({ type: 'success', message: 'Announcement cleared.' });
+      queryClient.invalidateQueries({ queryKey: ['announcement'] });
+    },
+    onError: (err: any) => setAlert({ type: 'error', message: err.response?.data?.error || 'Failed to clear' }),
+  });
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  }
+
+  return (
+    <div className="card space-y-4">
+      <div>
+        <h2 className="font-semibold text-text-primary">📢 Broadcast Announcement</h2>
+        <p className="text-text-secondary text-xs mt-1">Send an image and/or message to all users. Shows as a dismissible overlay on their dashboard.</p>
+      </div>
+
+      {alert && <Alert type={alert.type} message={alert.message} onDismiss={() => setAlert(null)} />}
+
+      {/* Current active announcement */}
+      {currentAnnouncement && (
+        <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(245,184,0,0.06)', border: '1px solid rgba(245,184,0,0.2)' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: '#f5b800' }}>🔴 Active Announcement</span>
+            <Button variant="danger" isLoading={clearMutation.isPending} onClick={() => clearMutation.mutate()}>Clear</Button>
+          </div>
+          {currentAnnouncement.image_url && (
+            <img src={currentAnnouncement.image_url} alt="Current announcement" className="w-full rounded-lg max-h-48 object-contain" style={{ background: '#000' }} />
+          )}
+          {currentAnnouncement.message && (
+            <p className="text-sm text-text-primary">{currentAnnouncement.message}</p>
+          )}
+        </div>
+      )}
+
+      {/* Compose new announcement */}
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1">Image (optional)</label>
+          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg text-sm border border-dashed border-slate-600 hover:border-slate-400 transition-colors">
+            {preview ? (
+              <img src={preview} alt="preview" className="h-12 w-auto rounded object-contain" />
+            ) : (
+              <span className="text-text-secondary">📎 Choose image…</span>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            {preview && <button type="button" className="ml-auto text-xs text-red-400 hover:underline" onClick={() => { setFile(null); setPreview(null); }}>Remove</button>}
+          </label>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1">Message (optional)</label>
+          <textarea
+            className="input w-full resize-none"
+            rows={3}
+            placeholder="e.g. Round of 16 predictions open! Make your picks now 🔥"
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+          />
+        </div>
+        <Button
+          isLoading={setMutation.isPending}
+          disabled={!file && !message.trim()}
+          onClick={() => setMutation.mutate()}
+        >
+          📢 Publish Announcement
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'logs'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'announce' | 'logs'>('upload');
 
   const tabs = [
     { key: 'upload', label: '📤 Upload CSV' },
@@ -952,6 +1064,7 @@ export default function AdminDashboard() {
     { key: 'users', label: '👥 Users' },
     { key: 'predictions', label: '🔮 Predictions' },
     { key: 'export', label: '📸 Export' },
+    { key: 'announce', label: '📢 Announce' },
     { key: 'logs', label: '📜 Logs' },
   ] as const;
 
@@ -986,6 +1099,7 @@ export default function AdminDashboard() {
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'predictions' && <AllPredictions />}
         {activeTab === 'export' && <ExportTab />}
+        {activeTab === 'announce' && <AnnouncementManager />}
         {activeTab === 'logs' && <AdminLogs />}
       </main>
     </div>

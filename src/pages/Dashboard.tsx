@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { MatchCard } from '../components/MatchCard';
@@ -7,6 +8,7 @@ import { PlayerPredictionsModal, EyeIcon } from '../components/PlayerPredictions
 import { useAvailableFixtures } from '../hooks/useFixtures';
 import { useUserStats, useLeaderboard } from '../hooks/useLeaderboard';
 import { useAuth } from '../context/AuthContext';
+import { announcementsApi } from '../api/announcements';
 
 function SpinnerIcon() {
   return (
@@ -102,6 +104,22 @@ export default function Dashboard() {
   const { data: stats } = useUserStats();
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
   const [viewingUser, setViewingUser] = useState<string | null>(null);
+
+  // Announcement banner (shown before fixture posters)
+  const { data: announcement } = useQuery({
+    queryKey: ['announcement'],
+    queryFn: announcementsApi.getCurrent,
+    staleTime: 60_000,
+  });
+  const announcementKey = announcement ? `announcement_dismissed_${announcement.id}_${String(announcement.image_url ?? announcement.message).slice(-12)}` : null;
+  const [announcementVersion, setAnnouncementVersion] = useState(0);
+  const showAnnouncement = !!announcement && announcementVersion >= 0 && announcementKey
+    ? !localStorage.getItem(announcementKey)
+    : false;
+  function dismissAnnouncement() {
+    if (announcementKey) localStorage.setItem(announcementKey, '1');
+    setAnnouncementVersion(v => v + 1);
+  }
 
   // Poster banner: show each fixture poster in turn, skip already-dismissed ones
   const [posterVersion, setPosterVersion] = useState(0);
@@ -258,8 +276,47 @@ export default function Dashboard() {
       <Footer />
       {viewingUser && <PlayerPredictionsModal username={viewingUser} onClose={() => setViewingUser(null)} />}
 
+      {/* Announcement Banner — shown before fixture posters */}
+      {showAnnouncement && announcement && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.88)', zIndex: 55 }}
+          onClick={dismissAnnouncement}
+        >
+          <div
+            className="relative mx-4 space-y-3"
+            style={{ maxWidth: '420px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {announcement.image_url && (
+              <img
+                src={announcement.image_url}
+                alt="Announcement"
+                className="w-full rounded-2xl shadow-2xl"
+                style={{ display: 'block' }}
+              />
+            )}
+            {announcement.message && (
+              <div
+                className="rounded-xl px-5 py-4 text-sm font-medium text-center leading-relaxed"
+                style={{ background: '#111', border: '1px solid rgba(245,184,0,0.25)', color: 'rgba(255,255,255,0.85)', borderLeft: '3px solid #f5b800' }}
+              >
+                {announcement.message}
+              </div>
+            )}
+            <button
+              onClick={dismissAnnouncement}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Match Poster Banner */}
-      {showPoster && posterFixture && (
+      {!showAnnouncement && showPoster && posterFixture && (
         <div
           className="fixed inset-0 flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.85)', zIndex: 50 }}
