@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { MatchCard } from '../components/MatchCard';
@@ -103,25 +103,24 @@ export default function Dashboard() {
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
-  // Poster banner: show if upcoming fixture has a poster_url not yet dismissed
-  const posterFixture = available?.find(f => f.poster_url);
-  const posterKey = posterFixture ? `poster_dismissed_${posterFixture.id}_${posterFixture.poster_url?.slice(-12)}` : null;
-  const [posterDismissed, setPosterDismissed] = useState(true);
-
-  // Re-check localStorage whenever posterKey changes (data load or poster replaced by admin)
-  useEffect(() => {
-    if (posterKey) {
-      setPosterDismissed(!!localStorage.getItem(posterKey));
-    } else {
-      setPosterDismissed(true);
-    }
-  }, [posterKey]);
-
-  const showPoster = !!posterFixture && !posterDismissed;
+  // Poster banner: show each fixture poster in turn, skip already-dismissed ones
+  const [posterVersion, setPosterVersion] = useState(0);
+  const posterFixture = (() => {
+    return available?.find(f => {
+      if (!f.poster_url) return false;
+      const key = `poster_dismissed_${f.id}_${f.poster_url.slice(-12)}`;
+      return !localStorage.getItem(key);
+    });
+  })();
+  // Re-evaluate when available data loads (posterVersion forces re-render after dismiss)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const showPoster = !!posterFixture && posterVersion >= 0;
 
   function dismissPoster() {
-    if (posterKey) localStorage.setItem(posterKey, '1');
-    setPosterDismissed(true);
+    if (!posterFixture?.poster_url) return;
+    const key = `poster_dismissed_${posterFixture.id}_${posterFixture.poster_url.slice(-12)}`;
+    localStorage.setItem(key, '1');
+    setPosterVersion(v => v + 1); // force re-evaluation → next undismissed poster
   }
 
   return (
