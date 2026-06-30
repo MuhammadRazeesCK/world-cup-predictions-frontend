@@ -98,6 +98,11 @@ function PredictionCard({ item }: { item: PredictionHistoryItem }) {
                   >
                     {item.result.home_goals} – {item.result.away_goals}
                   </div>
+                  {item.result.penalty_home_score != null && (
+                    <div className="text-[9px] font-bold mt-0.5" style={{ color: 'rgba(245,184,0,0.7)' }}>
+                      pens {item.result.penalty_home_score}–{item.result.penalty_away_score}
+                    </div>
+                  )}
                 </div>
               </>
             )}

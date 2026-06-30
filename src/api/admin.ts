@@ -103,6 +103,8 @@ export const adminApi = {
             status: string;
             home_score: number | null;
             away_score: number | null;
+            penalty_home_score: number | null;
+            penalty_away_score: number | null;
         };
         predictions: Array<{
             id: string;

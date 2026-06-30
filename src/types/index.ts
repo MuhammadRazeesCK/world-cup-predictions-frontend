@@ -86,6 +86,8 @@ export interface PredictionHistoryItem {
     result: {
         home_goals?: number;
         away_goals?: number;
+        penalty_home_score?: number | null;
+        penalty_away_score?: number | null;
         points?: number;
         result_type: PredictionResult;
     };

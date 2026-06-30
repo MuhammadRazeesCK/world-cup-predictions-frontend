@@ -52,6 +52,11 @@ function MiniPredCard({ item }: { item: PredictionHistoryItem }) {
                   <div className="font-black tabular-nums" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.4rem', lineHeight: 1, color: 'rgba(255,255,255,0.9)' }}>
                     {item.result.home_goals} – {item.result.away_goals}
                   </div>
+                  {item.result.penalty_home_score != null && (
+                    <div className="text-[9px] font-bold mt-0.5" style={{ color: 'rgba(245,184,0,0.7)' }}>
+                      pens {item.result.penalty_home_score}–{item.result.penalty_away_score}
+                    </div>
+                  )}
                 </div>
               </>
             )}

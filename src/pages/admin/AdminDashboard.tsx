@@ -760,7 +760,7 @@ function AllPredictions() {
     };
     const scoreDisplay =
       f.home_score !== null && f.away_score !== null
-        ? `${f.home_score}–${f.away_score}`
+        ? `${f.home_score}–${f.away_score}${f.penalty_home_score != null ? ` (pens ${f.penalty_home_score}–${f.penalty_away_score})` : ''}`
         : 'TBD';
 
     return (
