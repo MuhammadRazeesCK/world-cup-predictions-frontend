@@ -126,6 +126,7 @@ export default function Dashboard() {
   const posterFixture = (() => {
     return available?.find(f => {
       if (!f.poster_url) return false;
+      if (f.status === 'completed') return false;
       const key = `poster_dismissed_${f.id}_${f.poster_url.slice(-12)}`;
       return !localStorage.getItem(key);
     });
