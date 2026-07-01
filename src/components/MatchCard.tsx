@@ -169,7 +169,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
   const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
-  const { data: liveData } = useLiveData(fixture.id, isLive, isCompleted);
+  const { data: liveData } = useLiveData(fixture.id, isLive && !!fixture.api_fixture_id, isCompleted && !!fixture.api_fixture_id);
 
   return (
     <div
