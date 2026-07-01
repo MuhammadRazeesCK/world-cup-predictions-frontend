@@ -284,6 +284,7 @@ function FixtureList() {
 
   const active = data?.filter(f => f.status !== 'completed') ?? [];
   const completed = data?.filter(f => f.status === 'completed') ?? [];
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const FixtureTable = ({ rows, title }: { rows: typeof data; title: string }) => (
     <div>
@@ -360,7 +361,15 @@ function FixtureList() {
       <FixtureTable rows={active} title="🟢 Upcoming & Live" />
 
       <div className="border-t border-slate-700/50 pt-4">
-        <FixtureTable rows={completed} title="✅ Completed" />
+        <button
+          onClick={() => setShowCompleted(v => !v)}
+          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-3 w-full text-left"
+          style={{ color: 'rgba(255,255,255,0.35)' }}
+        >
+          <span>{showCompleted ? '▾' : '▸'}</span>
+          <span>✅ Completed ({completed.length})</span>
+        </button>
+        {showCompleted && <FixtureTable rows={completed} title="" />}
       </div>
 
       {/* Delete confirmation */}
