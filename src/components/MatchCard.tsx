@@ -87,16 +87,16 @@ interface LiveData {
   scorers: { name: string; minute: string; team: 'home' | 'away'; isOwnGoal: boolean; isPenalty: boolean }[];
 }
 
-function useLiveData(fixtureId: string, active: boolean) {
+function useLiveData(fixtureId: string, isLive: boolean, isCompleted: boolean) {
   return useQuery<LiveData>({
     queryKey: ['live-data', fixtureId],
     queryFn: async () => {
       const { data } = await apiClient.get(`/fixtures/${fixtureId}/live-data`);
       return data;
     },
-    enabled: active,
-    refetchInterval: 30_000,
-    staleTime: 25_000,
+    enabled: isLive || isCompleted,
+    refetchInterval: isLive ? 30_000 : false, // only poll during live
+    staleTime: isLive ? 25_000 : Infinity,    // completed data never goes stale
   });
 }
 
@@ -169,7 +169,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
   const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
-  const { data: liveData } = useLiveData(fixture.id, isLive || isCompleted);
+  const { data: liveData } = useLiveData(fixture.id, isLive, isCompleted);
 
   return (
     <div
