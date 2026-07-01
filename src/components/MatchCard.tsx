@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { AvailableFixture } from '../types';
 import { formatKickoffIST, formatStageName, getCountdownParts } from '../utils/timezone';
 import { useSubmitPrediction } from '../hooks/usePredictions';
 import { useAuth } from '../context/AuthContext';
 import { TeamFlag } from '../utils/teams';
+import apiClient from '../api/client';
 
 interface MatchCardProps { fixture: AvailableFixture; }
 interface PredictionForm { home: number; away: number; pen_home: number; pen_away: number; }
 
-function resultLabel(home: number, away: number, homeTeam: string, awayTeam: string) {
-  if (home > away) return { text: `${homeTeam} Win`, color: '#4ade80' };
-  if (away > home) return { text: `${awayTeam} Win`, color: '#f87171' };
-  return { text: 'Draw', color: '#fbbf24' };
+function resultLabel(home: number, away: number, homeTeam: string, awayTeam: string, live = false) {
+  if (home > away) return { text: live ? `${homeTeam} Leading` : `${homeTeam} Win`, color: '#4ade80' };
+  if (away > home) return { text: live ? `${awayTeam} Leading` : `${awayTeam} Win`, color: '#f87171' };
+  return { text: live ? 'Level' : 'Draw', color: '#fbbf24' };
 }
 
 function ClockIcon() {
@@ -79,6 +81,49 @@ function Countdown({ closesAt }: { closesAt: string }) {
   );
 }
 
+interface LiveData {
+  clock: string | null;
+  state: string;
+  scorers: { name: string; minute: string; team: 'home' | 'away'; isOwnGoal: boolean; isPenalty: boolean }[];
+}
+
+function useLiveData(fixtureId: string, active: boolean) {
+  return useQuery<LiveData>({
+    queryKey: ['live-data', fixtureId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/fixtures/${fixtureId}/live-data`);
+      return data;
+    },
+    enabled: active,
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+  });
+}
+
+function ScorersList({ scorers, homeTeam, awayTeam }: { scorers: LiveData['scorers']; homeTeam: string; awayTeam: string }) {
+  if (!scorers.length) return null;
+  const home = scorers.filter((s) => s.team === 'home');
+  const away = scorers.filter((s) => s.team === 'away');
+  return (
+    <div className="flex justify-between px-4 pb-3 gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="flex flex-col gap-0.5 pt-2 text-left" style={{ width: '45%' }}>
+        {home.map((s, i) => (
+          <span key={i} className="text-[10px] font-medium truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            ⚽ {s.name}{s.isOwnGoal ? ' (og)' : s.isPenalty ? ' (p)' : ''} <span style={{ color: 'rgba(255,255,255,0.3)' }}>{s.minute}</span>
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-col gap-0.5 pt-2 text-right" style={{ width: '45%' }}>
+        {away.map((s, i) => (
+          <span key={i} className="text-[10px] font-medium truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            <span style={{ color: 'rgba(255,255,255,0.3)' }}>{s.minute}</span> {s.name}{s.isOwnGoal ? ' (og)' : s.isPenalty ? ' (p)' : ''} ⚽
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MatchCard({ fixture }: MatchCardProps) {
   const { prediction_window: pw, user_prediction: userPred, status } = fixture;
   const { user } = useAuth();
@@ -124,6 +169,8 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
   const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
+  const { data: liveData } = useLiveData(fixture.id, isLive || isCompleted);
+
   return (
     <div
       className="rounded-xl overflow-hidden relative"
@@ -155,7 +202,13 @@ export function MatchCard({ fixture }: MatchCardProps) {
         </div>
         <div className="flex items-center gap-1.5">
           {isLive && (
-            <><span className="live-dot" /><span className="text-[10px] font-black uppercase tracking-wide" style={{ color: '#16a34a' }}>Live</span></>
+            <><span className="live-dot" /><span className="text-[10px] font-black uppercase tracking-wide" style={{ color: '#16a34a' }}>Live</span>
+            {liveData?.clock && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(22,163,74,0.15)', color: '#4ade80' }}>
+                {liveData.clock}
+              </span>
+            )}
+            </>
           )}
           {!isLive && !isCompleted && (
             <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -202,7 +255,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                   </span>
                 </div>
                 {(() => {
-                  const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team);
+                  const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team, isLive);
                   return (
                     <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-center"
                       style={{ background: `${r.color}18`, color: r.color, border: `1px solid ${r.color}40` }}>
@@ -230,6 +283,11 @@ export function MatchCard({ fixture }: MatchCardProps) {
 
         </div>
       </div>
+
+      {/* Goal scorers (live / completed) */}
+      {liveData && liveData.scorers.length > 0 && (
+        <ScorersList scorers={liveData.scorers} homeTeam={fixture.home_team} awayTeam={fixture.away_team} />
+      )}
 
       {/* Prediction zone */}
       {!isAdmin && (

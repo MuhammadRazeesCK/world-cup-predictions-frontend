@@ -20,6 +20,7 @@ export const adminApi = {
         kickoff_time: string;
         stage: string;
         penalty_enabled?: boolean;
+        api_fixture_id?: number | null;
     }): Promise<ApiResponse<Fixture>> => {
         const { data } = await apiClient.post('/admin/fixtures', fixture);
         return data;

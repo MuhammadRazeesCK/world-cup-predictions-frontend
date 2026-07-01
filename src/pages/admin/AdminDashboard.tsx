@@ -43,6 +43,7 @@ interface FixtureForm {
   kickoff_tz: string;
   stage: string;
   penalty_enabled: boolean;
+  api_fixture_id?: string;
 }
 
 function UploadSection() {
@@ -143,6 +144,7 @@ function CreateFixtureForm() {
       ...data,
       match_number: Number(data.match_number),
       kickoff_time: toISO(data.kickoff_date, data.kickoff_tz),
+      api_fixture_id: data.api_fixture_id?.trim() ? Number(data.api_fixture_id) : null,
     }),
     onSuccess: () => {
       setSuccess('Fixture created successfully!');
@@ -224,6 +226,11 @@ function CreateFixtureForm() {
           <input type="checkbox" {...register('penalty_enabled')} className="w-4 h-4 accent-yellow-400" />
           Penalty shootout enabled (knockout matches only)
         </label>
+
+        <div>
+          <label className="label">ESPN Event ID <span className="text-xs font-normal opacity-50">(for live score sync)</span></label>
+          <input type="number" className="input" placeholder="e.g. 760490" {...register('api_fixture_id')} />
+        </div>
 
         <Button type="submit" isLoading={mutation.isPending} fullWidth>
           Create Fixture
@@ -405,6 +412,7 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
   const [awayScore, setAwayScore] = useState<number>(fixture.away_score ?? 0);
   const [penHomeScore, setPenHomeScore] = useState<number>(0);
   const [penAwayScore, setPenAwayScore] = useState<number>(0);
+  const [espnEventId, setEspnEventId] = useState<string>(fixture.api_fixture_id != null ? String(fixture.api_fixture_id) : '');
   const isKnockout = fixture.stage !== 'group';
   const isDraw = homeScore === awayScore;
   const showPenalty = isKnockout && isDraw && (fixture as any).penalty_enabled;
@@ -422,6 +430,7 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
       ...data,
       home_score: homeScore,
       away_score: awayScore,
+      api_fixture_id: espnEventId.trim() === '' ? null : Number(espnEventId),
       ...(showPenalty && { penalty_home_score: penHomeScore, penalty_away_score: penAwayScore }),
     }),
     onSuccess,
@@ -513,6 +522,16 @@ function EditFixtureModal({ fixture, onClose, onSuccess }: {
             )}
           </div>
         )}
+        <div>
+          <label className="label">ESPN Event ID <span className="text-xs font-normal opacity-50">(for live score sync)</span></label>
+          <input
+            type="number"
+            className="input"
+            placeholder="e.g. 760490"
+            value={espnEventId}
+            onChange={(e) => setEspnEventId(e.target.value)}
+          />
+        </div>
         <div className="flex gap-2">
           <Button type="submit" isLoading={mutation.isPending}>Save Changes</Button>
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
