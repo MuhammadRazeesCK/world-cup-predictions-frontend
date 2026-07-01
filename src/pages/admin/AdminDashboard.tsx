@@ -282,14 +282,12 @@ function FixtureList() {
     completed: 'bg-slate-700 text-slate-400',
   };
 
-  return (
-    <div className="card space-y-3">
-      <h2 className="font-semibold text-text-primary">📋 All Fixtures ({data?.length ?? 0})</h2>
+  const active = data?.filter(f => f.status !== 'completed') ?? [];
+  const completed = data?.filter(f => f.status === 'completed') ?? [];
 
-      {alert && <Alert type={alert.type} message={alert.message} onDismiss={() => setAlert(null)} />}
-
-      {isLoading && <div className="text-text-secondary text-sm">Loading...</div>}
-
+  const FixtureTable = ({ rows, title }: { rows: typeof data; title: string }) => (
+    <div>
+      <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>{title} ({rows?.length ?? 0})</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -304,7 +302,7 @@ function FixtureList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
-            {data?.map((f) => (
+            {rows?.map((f) => (
               <tr key={f.id} className="hover:bg-slate-700/20">
                 <td className="py-2 text-text-secondary">{f.match_number}</td>
                 <td className="py-2 text-text-primary font-medium">
@@ -330,9 +328,7 @@ function FixtureList() {
                       className="text-xs mr-2 hover:underline"
                       style={{ color: '#f87171' }}
                       title="Delete poster"
-                    >
-                      🗑
-                    </button>
+                    >🗑</button>
                   )}
                   {f.status === 'completed' && (
                     <button
@@ -340,9 +336,7 @@ function FixtureList() {
                       disabled={rescoreMutation.isPending}
                       className="text-xs mr-2 hover:underline"
                       style={{ color: '#22c55e' }}
-                    >
-                      {rescoreMutation.isPending ? '…' : 'Rescore'}
-                    </button>
+                    >{rescoreMutation.isPending ? '…' : 'Rescore'}</button>
                   )}
                   {f.status === 'scheduled' && (
                     <button onClick={() => setDeleteId(f.id)} className="text-danger hover:underline text-xs">Del</button>
@@ -352,6 +346,21 @@ function FixtureList() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="card space-y-6">
+      <h2 className="font-semibold text-text-primary">📋 All Fixtures ({data?.length ?? 0})</h2>
+
+      {alert && <Alert type={alert.type} message={alert.message} onDismiss={() => setAlert(null)} />}
+      {isLoading && <div className="text-text-secondary text-sm">Loading...</div>}
+
+      <FixtureTable rows={active} title="🟢 Upcoming & Live" />
+
+      <div className="border-t border-slate-700/50 pt-4">
+        <FixtureTable rows={completed} title="✅ Completed" />
       </div>
 
       {/* Delete confirmation */}
