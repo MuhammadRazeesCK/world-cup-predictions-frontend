@@ -82,11 +82,16 @@ export default function AdminMonitoring() {
                                 <span className="text-white/80">{formatTime(h.startedAt)}</span>
                                 <span className="text-xs text-white/30">{h.metadata?.env ?? ''}</span>
                             </div>
-                            {h.inferredDowntimeMs != null && (
-                                <span className="text-xs text-red-400">
-                                    ↓ was down ~{formatDuration(h.inferredDowntimeMs)}
-                                </span>
-                            )}
+                            <div className="flex items-center gap-2 text-xs">
+                                {h.ranForMs == null ? (
+                                    <span className="text-green-400">▲ running for {d?.uptimeMs != null ? formatDuration(d.uptimeMs) : '…'}</span>
+                                ) : (
+                                    <>
+                                        <span className="text-white/40">ran for {formatDuration(h.ranForMs)}</span>
+                                        <span className="text-red-400">↓ restarted</span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
