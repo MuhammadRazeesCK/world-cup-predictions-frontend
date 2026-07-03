@@ -11,6 +11,7 @@ import { formatKickoffIST, formatStageName } from '../../utils/timezone';
 import { SORTED_TEAMS, TeamFlag } from '../../utils/teams';
 import { ExportTab } from '../../components/export/ExportTab';
 import { PendingReminderExport } from '../../components/export/PendingReminderCard';
+import AdminMonitoring from './AdminMonitoring';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -1092,7 +1093,7 @@ function AnnouncementManager() {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'announce' | 'logs'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'announce' | 'logs' | 'monitoring'>('upload');
 
   const tabs = [
     { key: 'upload', label: '📤 Upload CSV' },
@@ -1103,6 +1104,7 @@ export default function AdminDashboard() {
     { key: 'export', label: '📸 Export' },
     { key: 'announce', label: '📢 Announce' },
     { key: 'logs', label: '📜 Logs' },
+    { key: 'monitoring', label: '📡 Monitoring' },
   ] as const;
 
   return (
@@ -1138,6 +1140,7 @@ export default function AdminDashboard() {
         {activeTab === 'export' && <ExportTab />}
         {activeTab === 'announce' && <AnnouncementManager />}
         {activeTab === 'logs' && <AdminLogs />}
+        {activeTab === 'monitoring' && <AdminMonitoring />}
       </main>
     </div>
   );

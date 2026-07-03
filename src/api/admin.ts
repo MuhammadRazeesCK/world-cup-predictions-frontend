@@ -143,4 +143,9 @@ export const adminApi = {
         const { data } = await apiClient.delete('/admin/announcement');
         return data;
     },
+
+    getMonitoring: async (): Promise<any> => {
+        const { data } = await apiClient.get('/admin/monitoring');
+        return data;
+    },
 };
