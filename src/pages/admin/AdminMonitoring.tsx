@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { adminApi } from '../../api/admin';
 import { DateTime } from 'luxon';
 
@@ -28,6 +29,17 @@ function StatusBadge({ status }: { status: number }) {
     );
 }
 
+function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return formatTime(iso);
+}
+
 export default function AdminMonitoring() {
     const { data, isLoading, dataUpdatedAt } = useQuery({
         queryKey: ['admin-monitoring'],
@@ -36,6 +48,7 @@ export default function AdminMonitoring() {
     });
 
     const d = data?.data;
+    const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
     if (isLoading) {
         return <div className="text-center py-20 text-white/50">Loading...</div>;
@@ -135,6 +148,57 @@ export default function AdminMonitoring() {
                         <p className="px-4 py-3 text-sm text-white/30">No requests logged yet</p>
                     )}
                 </div>
+            </div>
+
+            {/* User Activity */}
+            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <h2 className="text-sm font-semibold text-white/80">User Activity <span className="text-white/30 font-normal">(last 24h)</span></h2>
+                </div>
+                {(d?.userActivity ?? []).length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-white/30">No authenticated activity yet</p>
+                ) : (
+                    <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                        {(d?.userActivity ?? []).map((u: any) => (
+                            <div key={u.username}>
+                                <button
+                                    className="w-full px-4 py-3 flex items-center justify-between text-sm hover:bg-white/5 transition-colors"
+                                    onClick={() => setSelectedUser(selectedUser === u.username ? null : u.username)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className={u.role === 'admin' ? 'text-yellow-400 font-semibold' : 'text-white/80 font-medium'}>
+                                            {u.username}
+                                        </span>
+                                        {u.role === 'admin' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">admin</span>}
+                                    </div>
+                                    <div className="flex items-center gap-6 text-xs text-white/40">
+                                        <span><span className="text-white/70 font-medium">{u.totalRequests}</span> requests</span>
+                                        <span><span className="text-white/70 font-medium">{u.uniquePaths}</span> paths</span>
+                                        <span>last seen <span className="text-white/70">{timeAgo(u.lastSeen)}</span></span>
+                                        <span>first ever <span className="text-white/70">{u.firstEverSeen ? formatTime(u.firstEverSeen) : '—'}</span></span>
+                                        <span className="text-white/30">{selectedUser === u.username ? '▲' : '▼'}</span>
+                                    </div>
+                                </button>
+                                {selectedUser === u.username && (
+                                    <div className="px-4 pb-3 pt-1" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                        <p className="text-xs text-white/30 mb-2">Top paths visited (24h)</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {u.topPaths.map((p: any) => (
+                                                <span key={p.path} className="text-xs px-2 py-1 rounded-full font-mono" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
+                                                    {p.path} <span className="text-white/30">×{p.count}</span>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="mt-2 flex gap-6 text-xs text-white/30">
+                                            <span>First seen today: <span className="text-white/50">{formatTime(u.firstSeen24h)}</span></span>
+                                            <span>Last seen: <span className="text-white/50">{formatTime(u.lastSeen)}</span></span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
