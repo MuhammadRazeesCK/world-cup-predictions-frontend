@@ -101,7 +101,7 @@ export default function AdminMonitoring() {
                     <table className="w-full text-xs">
                         <thead>
                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                {['Time', 'Method', 'Path', 'Status', 'Duration', 'IP'].map((h) => (
+                                {['Time', 'Method', 'Path', 'Status', 'Duration', 'User', 'IP'].map((h) => (
                                     <th key={h} className="px-4 py-2 text-left text-white/40 font-medium">{h}</th>
                                 ))}
                             </tr>
@@ -116,6 +116,11 @@ export default function AdminMonitoring() {
                                     <td className="px-4 py-1.5 text-white/70 font-mono truncate max-w-xs">{r.path}</td>
                                     <td className="px-4 py-1.5"><StatusBadge status={r.status} /></td>
                                     <td className="px-4 py-1.5 text-white/50">{r.duration}ms</td>
+                                    <td className="px-4 py-1.5">
+                                        {r.username
+                                            ? <span className={r.role === 'admin' ? 'text-yellow-400' : 'text-white/70'}>{r.username}</span>
+                                            : <span className="text-white/20">—</span>}
+                                    </td>
                                     <td className="px-4 py-1.5 text-white/30 font-mono">{r.ip}</td>
                                 </tr>
                             ))}
