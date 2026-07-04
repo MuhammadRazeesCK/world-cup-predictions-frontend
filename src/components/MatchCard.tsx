@@ -11,9 +11,18 @@ import apiClient from '../api/client';
 interface MatchCardProps { fixture: AvailableFixture; }
 interface PredictionForm { home: number; away: number; pen_home: number; pen_away: number; }
 
-function resultLabel(home: number, away: number, homeTeam: string, awayTeam: string, live = false) {
+function resultLabel(
+  home: number, away: number, homeTeam: string, awayTeam: string,
+  live = false, penHome?: number | null, penAway?: number | null,
+) {
   if (home > away) return { text: live ? `${homeTeam} Leading` : `${homeTeam} Win`, color: '#4ade80' };
   if (away > home) return { text: live ? `${awayTeam} Leading` : `${awayTeam} Win`, color: '#f87171' };
+  // Regular score is a draw — check penalty winner
+  if (!live && penHome != null && penAway != null && penHome !== penAway) {
+    const penWinner = penHome > penAway ? homeTeam : awayTeam;
+    const penColor = penHome > penAway ? '#4ade80' : '#f87171';
+    return { text: `${penWinner} Win (Pens)`, color: penColor };
+  }
   return { text: live ? 'Level' : 'Draw', color: '#fbbf24' };
 }
 
@@ -255,7 +264,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                   </span>
                 </div>
                 {(() => {
-                  const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team, isLive);
+                  const r = resultLabel(fixture.home_score!, fixture.away_score!, fixture.home_team, fixture.away_team, isLive, fixture.penalty_home_score, fixture.penalty_away_score);
                   return (
                     <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-center"
                       style={{ background: `${r.color}18`, color: r.color, border: `1px solid ${r.color}40` }}>

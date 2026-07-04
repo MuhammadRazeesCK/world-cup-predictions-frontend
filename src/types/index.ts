@@ -31,6 +31,8 @@ export interface Fixture {
     prediction_closes_at: string;
     api_fixture_id: number | null;
     penalty_enabled: boolean;
+    penalty_home_score: number | null;
+    penalty_away_score: number | null;
     poster_url: string | null;
 }
 
