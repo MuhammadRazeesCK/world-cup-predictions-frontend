@@ -59,14 +59,25 @@ export function UserExport() {
     const generatePng = async (ref: React.RefObject<HTMLDivElement>) => {
         await document.fonts.ready;
         const el = ref.current!;
-        const dataUrl = await toPng(el, {
-            pixelRatio: 2,
-            cacheBust: true,
-            width: CARD_W,
-            height: el.offsetHeight,
-        });
-        const res = await fetch(dataUrl);
-        return res.blob();
+
+        // iOS Safari: html-to-image loses all styles inside position:absolute+transform parents.
+        // Move the element to body temporarily so it has a clean rendering context.
+        const originalParent = el.parentElement!;
+        const originalNextSibling = el.nextSibling;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:fixed;top:-99999px;left:-99999px;width:900px;z-index:-1;';
+        wrapper.appendChild(el);
+        document.body.appendChild(wrapper);
+
+        try {
+            const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true });
+            const res = await fetch(dataUrl);
+            return res.blob();
+        } finally {
+            // Restore element to its original position in the DOM
+            originalParent.insertBefore(el, originalNextSibling);
+            document.body.removeChild(wrapper);
+        }
     };
 
     const dl = async (ref: React.RefObject<HTMLDivElement>, filename: string) => {
