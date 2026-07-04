@@ -57,7 +57,7 @@ export function UserExport() {
     const selectedGroup = groups.find((g) => g.fixture.id === selectedId) ?? null;
 
     const generatePng = async (ref: React.RefObject<HTMLDivElement>) => {
-        const dataUrl = await toPng(ref.current, { pixelRatio: 2, cacheBust: true });
+        const dataUrl = await toPng(ref.current!, { pixelRatio: 2, cacheBust: true });
         const res = await fetch(dataUrl);
         return res.blob();
     };
