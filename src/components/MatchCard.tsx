@@ -272,6 +272,12 @@ export function MatchCard({ fixture }: MatchCardProps) {
                     </span>
                   );
                 })()}
+                {/* Penalty shootout score */}
+                {isCompleted && fixture.penalty_home_score != null && fixture.penalty_away_score != null && (
+                  <span className="text-[10px] tabular-nums" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    ({fixture.penalty_home_score} – {fixture.penalty_away_score} pens)
+                  </span>
+                )}
               </>
             ) : (
               <div className="flex flex-col items-center gap-1.5">
