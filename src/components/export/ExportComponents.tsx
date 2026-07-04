@@ -72,16 +72,24 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
     );
 }
 
-export function ScaledPreview({ scale, width, children }: { scale: number; width: number; children: React.ReactNode }) {
+export function ScaledPreview({ maxScale = 0.67, width, children }: { maxScale?: number; width: number; children: React.ReactNode }) {
+    const outer = useRef<HTMLDivElement>(null);
     const inner = useRef<HTMLDivElement>(null);
+    const [containerW, setContainerW] = useState(width * maxScale);
     const [h, setH] = useState(0);
+    useEffect(() => {
+        const el = outer.current; if (!el) return;
+        const ro = new ResizeObserver(([e]) => setContainerW(e.contentRect.width));
+        ro.observe(el); return () => ro.disconnect();
+    }, []);
     useEffect(() => {
         const el = inner.current; if (!el) return;
         const ro = new ResizeObserver(([e]) => setH(e.contentRect.height));
         ro.observe(el); return () => ro.disconnect();
     }, []);
+    const scale = Math.min(maxScale, containerW / width);
     return (
-        <div style={{ position: 'relative', width: width * scale, height: h > 0 ? h * scale : 350, margin: '0 auto', overflow: 'hidden', borderRadius: 6 }}>
+        <div ref={outer} style={{ width: '100%', position: 'relative', height: h > 0 ? h * scale : 350, overflow: 'hidden', borderRadius: 6 }}>
             <div ref={inner} style={{ position: 'absolute', top: 0, left: 0, transform: `scale(${scale})`, transformOrigin: 'top left', width }}>
                 {children}
             </div>
