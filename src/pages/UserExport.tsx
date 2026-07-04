@@ -93,7 +93,7 @@ export function UserExport() {
         finally { setExporting(false); }
     };
 
-    const share = async (ref: React.RefObject<HTMLDivElement>, filename: string) => {
+    const share = async (ref: React.RefObject<HTMLDivElement>, filename: string, title: string) => {
         if (!ref.current) return;
         setSharing(true);
         setShareMsg(null);
@@ -102,7 +102,7 @@ export function UserExport() {
             const file = new File([blob], filename, { type: 'image/png' });
             // Web Share API — works natively on mobile (iOS Safari, Android Chrome)
             if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file], title: 'WC 2026 Predictions League' });
+                await navigator.share({ files: [file], title });
                 return;
             }
             // Fallback: copy image to clipboard (desktop browsers)
@@ -114,10 +114,10 @@ export function UserExport() {
         } finally { setSharing(false); }
     };
 
-    const WABtn = ({ divRef, filename }: { divRef: React.RefObject<HTMLDivElement>; filename: string }) => (
+    const WABtn = ({ divRef, filename, title }: { divRef: React.RefObject<HTMLDivElement>; filename: string; title: string }) => (
         <button
             disabled={sharing}
-            onClick={() => share(divRef, filename)}
+            onClick={() => share(divRef, filename, title)}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-opacity disabled:opacity-40"
             style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}
         >
@@ -128,10 +128,11 @@ export function UserExport() {
         </button>
     );
 
-    const PreviewCard = ({ children, divRef, filename }: {
+    const PreviewCard = ({ children, divRef, filename, title }: {
         children: React.ReactNode;
         divRef: React.RefObject<HTMLDivElement>;
         filename: string;
+        title: string;
     }) => (
         <div className="space-y-3">
             <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
@@ -145,7 +146,7 @@ export function UserExport() {
             )}
             <div className="flex gap-2">
                 <Button isLoading={exporting} onClick={() => dl(divRef, filename)}>⬇ Download</Button>
-                <WABtn divRef={divRef} filename={filename} />
+                <WABtn divRef={divRef} filename={filename} title={title} />
             </div>
         </div>
     );
@@ -216,6 +217,7 @@ export function UserExport() {
                                     <PreviewCard
                                         divRef={predsRef}
                                         filename={`wc2026-m${selectedGroup.fixture.match_number}-${slug(selectedGroup.fixture.home_team)}-vs-${slug(selectedGroup.fixture.away_team)}-predictions.png`}
+                                        title={`${stageName(selectedGroup.fixture.stage)}: ${selectedGroup.fixture.home_team} vs ${selectedGroup.fixture.away_team} — Match Predictions`}
                                     >
                                         <PredictionsCard cardRef={predsRef} group={selectedGroup} />
                                     </PreviewCard>
@@ -254,7 +256,11 @@ export function UserExport() {
                                 <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>No leaderboard data yet</p>
                             </div>
                         ) : (
-                            <PreviewCard divRef={standRef} filename={`wc2026-standings-${standingsScope}.png`}>
+                            <PreviewCard
+                                divRef={standRef}
+                                filename={`wc2026-standings-${standingsScope}.png`}
+                                title={standingsScope === 'all' ? 'Overall Standings' : standingsScope === 'knockout' ? 'Knockout Round Standings' : 'Group Stage Standings'}
+                            >
                                 <StandingsCard cardRef={standRef} entries={entries} scope={standingsScope} />
                             </PreviewCard>
                         )}
@@ -293,6 +299,7 @@ export function UserExport() {
                                     <PreviewCard
                                         divRef={predictedWinnersRef}
                                         filename={`wc2026-m${selectedGroup.fixture.match_number}-${slug(selectedGroup.fixture.home_team)}-vs-${slug(selectedGroup.fixture.away_team)}-predicted-winners.png`}
+                                        title={`${stageName(selectedGroup.fixture.stage)}: ${selectedGroup.fixture.home_team} vs ${selectedGroup.fixture.away_team} — Who's Backing Who?`}
                                     >
                                         <PredictedWinnersCard cardRef={predictedWinnersRef} group={selectedGroup} />
                                     </PreviewCard>
