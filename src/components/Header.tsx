@@ -19,6 +19,7 @@ export function Header() {
     { to: '/', label: 'Home' },
     { to: '/leaderboard', label: 'Standings' },
     { to: '/history', label: 'My Picks' },
+    { to: '/export', label: 'Export' },
     { to: '/profile', label: 'Profile' },
   ];
 

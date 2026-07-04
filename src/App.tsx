@@ -7,6 +7,7 @@ import PredictionHistory from './pages/PredictionHistory';
 import LeaderboardPage from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import { UserExport } from './pages/UserExport';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/history" element={<RequireAuth><PredictionHistory /></RequireAuth>} />
             <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+            <Route path="/export" element={<RequireAuth><UserExport /></RequireAuth>} />
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

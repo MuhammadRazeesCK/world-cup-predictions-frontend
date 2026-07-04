@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { ApiResponse, Prediction, PredictionHistoryItem } from '../types';
+import type { FixtureGroup } from '../components/export/ExportComponents';
 
 export const predictionsApi = {
     submit: async (
@@ -41,5 +42,10 @@ export const predictionsApi = {
             if (err.response?.status === 204) return null;
             throw err;
         }
+    },
+
+    getLockedFixtures: async (): Promise<ApiResponse<FixtureGroup[]>> => {
+        const { data } = await apiClient.get('/predictions/locked-fixtures');
+        return data;
     },
 };
