@@ -19,6 +19,7 @@ export function Header() {
     { to: '/', label: 'Home' },
     { to: '/leaderboard', label: 'Standings' },
     { to: '/history', label: 'My Picks' },
+    ...(!isAdmin ? [{ to: '/polls', label: 'Polls' }] : []),
     { to: '/export', label: 'Export' },
     { to: '/profile', label: 'Profile' },
   ];
@@ -42,6 +43,12 @@ export function Header() {
         <rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" />
       </svg>
     )},
+    ...(!isAdmin ? [{ to: '/polls', label: 'Polls', icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+      </svg>
+    )}] : []),
     { to: '/export', label: 'Export', icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />

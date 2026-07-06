@@ -9,6 +9,7 @@ import { useAvailableFixtures } from '../hooks/useFixtures';
 import { useUserStats, useLeaderboard } from '../hooks/useLeaderboard';
 import { useAuth } from '../context/AuthContext';
 import { announcementsApi } from '../api/announcements';
+import { pollsApi } from '../api/polls';
 
 function SpinnerIcon() {
   return (
@@ -105,6 +106,14 @@ export default function Dashboard() {
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
+  // Live polls indicator: polls the user hasn't voted on yet
+  const { data: livePolls = [] } = useQuery({
+    queryKey: ['polls'],
+    queryFn: pollsApi.getPolls,
+    staleTime: 60_000,
+  });
+  const unvotedPolls = livePolls.filter((p) => !p.isClosed && p.userVote === null);
+
   // Announcement banner (shown before fixture posters)
   const { data: announcement } = useQuery({
     queryKey: ['announcement'],
@@ -166,6 +175,33 @@ export default function Dashboard() {
             Make your predictions before the whistle blows
           </div>
         </div>
+
+        {/* Live polls banner */}
+        {unvotedPolls.length > 0 && (
+          <Link
+            to="/polls"
+            className="flex items-center justify-between rounded-xl px-4 py-3 transition-all"
+            style={{
+              background: 'rgba(245,184,0,0.07)',
+              border: '1px solid rgba(245,184,0,0.25)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🗳️</span>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {unvotedPolls.length} poll{unvotedPolls.length > 1 ? 's' : ''} happening right now!
+                </p>
+                <p className="text-xs" style={{ color: 'rgba(245,184,0,0.7)' }}>
+                  {unvotedPolls[0].question}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#f5b800', color: '#000' }}>
+              Vote Now →
+            </span>
+          </Link>
+        )}
 
         {/* Stats row */}
         {stats && (
