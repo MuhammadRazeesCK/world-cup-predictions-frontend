@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FlagBunting } from './FlagBunting';
+import { useQuery } from '@tanstack/react-query';
+import { pollsApi } from '../api/polls';
 
 function SettingsIcon() {
   return (
@@ -14,6 +16,15 @@ function SettingsIcon() {
 export function Header() {
   const { user, logout, isAdmin } = useAuth();
   const { pathname } = useLocation();
+
+  // Unvoted live polls — for badge indicator (non-admin only)
+  const { data: polls = [] } = useQuery({
+    queryKey: ['polls'],
+    queryFn: pollsApi.getPolls,
+    enabled: !!user && !isAdmin,
+    staleTime: 60_000,
+  });
+  const unvotedCount = polls.filter((p) => !p.isClosed && p.userVote === null).length;
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -103,6 +114,7 @@ export function Header() {
             <nav className="hidden sm:flex items-center gap-0.5">
               {navLinks.map((link) => {
                 const active = pathname === link.to;
+                const isPollsLink = link.to === '/polls';
                 return (
                   <Link
                     key={link.to}
@@ -111,6 +123,14 @@ export function Header() {
                     style={{ color: active ? '#f5b800' : 'rgba(255,255,255,0.45)' }}
                   >
                     {link.label}
+                    {isPollsLink && unvotedCount > 0 && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-black px-1"
+                        style={{ background: '#f5b800', color: '#000' }}
+                      >
+                        {unvotedCount}
+                      </span>
+                    )}
                     {active && (
                       <span
                         className="absolute bottom-0 left-3 right-3 rounded-full"
@@ -169,14 +189,25 @@ export function Header() {
         >
           {mobileLinks.map((link) => {
             const active = pathname === link.to;
+            const isPollsLink = link.to === '/polls';
             return (
               <Link
                 key={link.to}
                 to={link.to}
-                className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5"
+                className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative"
                 style={{ color: active ? '#f5b800' : 'rgba(255,255,255,0.35)' }}
               >
-                {link.icon}
+                <span className="relative">
+                  {link.icon}
+                  {isPollsLink && unvotedCount > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1 min-w-[14px] h-3.5 rounded-full flex items-center justify-center text-[8px] font-black px-0.5"
+                      style={{ background: '#f5b800', color: '#000' }}
+                    >
+                      {unvotedCount}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[9px] font-bold uppercase tracking-wide">{link.label}</span>
               </Link>
             );

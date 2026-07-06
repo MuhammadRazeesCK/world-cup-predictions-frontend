@@ -106,13 +106,23 @@ export default function Dashboard() {
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
-  // Live polls indicator: polls the user hasn't voted on yet
+  // Live polls — shared query key with Header for zero extra requests
   const { data: livePolls = [] } = useQuery({
     queryKey: ['polls'],
     queryFn: pollsApi.getPolls,
     staleTime: 60_000,
   });
   const unvotedPolls = livePolls.filter((p) => !p.isClosed && p.userVote === null);
+
+  // Featured poll modal — show once per session when there are unvoted polls
+  const [pollModalDismissed, setPollModalDismissed] = useState(() =>
+    !!sessionStorage.getItem('poll_modal_shown')
+  );
+  const showPollModal = unvotedPolls.length > 0 && !pollModalDismissed;
+  function dismissPollModal() {
+    sessionStorage.setItem('poll_modal_shown', '1');
+    setPollModalDismissed(true);
+  }
 
   // Announcement banner (shown before fixture posters)
   const { data: announcement } = useQuery({
@@ -176,29 +186,110 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Live polls banner */}
+        {/* Featured poll modal — shown once per session */}
+        {showPollModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+            onClick={dismissPollModal}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl overflow-hidden"
+              style={{ background: '#111', border: '1px solid rgba(245,184,0,0.25)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal header */}
+              <div className="px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#4ade80' }}>Live Poll</span>
+                  </div>
+                  <button onClick={dismissPollModal} className="text-white/30 hover:text-white/60 text-lg leading-none">✕</button>
+                </div>
+                <h3 className="font-black text-white mt-2" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.4rem', letterSpacing: '0.04em' }}>
+                  {unvotedPolls[0].emoji && <span className="mr-2">{unvotedPolls[0].emoji}</span>}
+                  {unvotedPolls[0].question}
+                </h3>
+                <p className="text-xs text-white/30 mt-1">{unvotedPolls[0].totalVotes} vote{unvotedPolls[0].totalVotes !== 1 ? 's' : ''} so far · cast yours now</p>
+              </div>
+
+              {/* Option preview */}
+              <div className="px-5 py-4 space-y-2">
+                {unvotedPolls[0].options.slice(0, 4).map((opt) => (
+                  <div
+                    key={opt.index}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    {opt.image && (
+                      <img src={opt.image} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <span className="text-sm text-white/80 font-medium">{opt.label}</span>
+                  </div>
+                ))}
+                {unvotedPolls[0].options.length > 4 && (
+                  <p className="text-xs text-white/30 pl-1">+{unvotedPolls[0].options.length - 4} more options</p>
+                )}
+              </div>
+
+              {/* CTA */}
+              <div className="px-5 pb-5 space-y-2">
+                <Link
+                  to="/polls"
+                  onClick={dismissPollModal}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-widest"
+                  style={{ background: 'linear-gradient(135deg,#f5b800,#ff8c00)', color: '#000' }}
+                >
+                  🗳️ Cast My Vote
+                </Link>
+                <button
+                  onClick={dismissPollModal}
+                  className="w-full text-xs text-white/25 py-1"
+                >
+                  Maybe later
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Live polls banner — persistent strip above stats */}
         {unvotedPolls.length > 0 && (
           <Link
             to="/polls"
-            className="flex items-center justify-between rounded-xl px-4 py-3 transition-all"
+            className="flex items-center justify-between rounded-xl px-4 py-3.5 transition-all"
             style={{
-              background: 'rgba(245,184,0,0.07)',
-              border: '1px solid rgba(245,184,0,0.25)',
+              background: 'linear-gradient(135deg, rgba(245,184,0,0.1) 0%, rgba(255,140,0,0.06) 100%)',
+              border: '1px solid rgba(245,184,0,0.3)',
+              boxShadow: '0 0 20px rgba(245,184,0,0.08)',
             }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-xl">🗳️</span>
+              <div className="relative flex-shrink-0">
+                <span className="text-2xl">🗳️</span>
+                <span
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
+                  style={{ background: '#f5b800', color: '#000' }}
+                >
+                  {unvotedPolls.length}
+                </span>
+              </div>
               <div>
-                <p className="text-sm font-bold text-white">
-                  {unvotedPolls.length} poll{unvotedPolls.length > 1 ? 's' : ''} happening right now!
+                <p className="text-sm font-black text-white">
+                  {unvotedPolls.length === 1 ? 'Poll happening right now!' : `${unvotedPolls.length} polls happening right now!`}
                 </p>
                 <p className="text-xs" style={{ color: 'rgba(245,184,0,0.7)' }}>
                   {unvotedPolls[0].question}
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#f5b800', color: '#000' }}>
-              Vote Now →
+            <span
+              className="text-xs font-black px-3 py-1.5 rounded-lg flex-shrink-0 uppercase tracking-wide"
+              style={{ background: '#f5b800', color: '#000' }}
+            >
+              Vote →
             </span>
           </Link>
         )}
