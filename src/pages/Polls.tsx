@@ -51,17 +51,19 @@ function timeUntil(iso: string): string {
 function PollCard({ poll }: { poll: Poll }) {
     const queryClient = useQueryClient();
     const [optimisticVote, setOptimisticVote] = useState<number | null>(null);
+    const [changingVote, setChangingVote] = useState(false);
 
     const voteMutation = useMutation({
         mutationFn: (idx: number) => pollsApi.vote(poll.id, idx),
-        onMutate: (idx) => setOptimisticVote(idx),
+        onMutate: (idx) => { setOptimisticVote(idx); setChangingVote(false); },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['polls'] }); setOptimisticVote(null); },
         onError: () => setOptimisticVote(null),
     });
 
     const userVote = optimisticVote ?? poll.userVote;
     const hasVoted = userVote !== null;
-    const showResults = hasVoted || poll.isClosed;
+    const canChangeVote = hasVoted && !poll.isClosed;
+    const showResults = (hasVoted && !changingVote) || poll.isClosed;
 
     const getVotes = (idx: number) => {
         if (optimisticVote === null) return poll.options[idx]?.votes ?? 0;
@@ -105,15 +107,17 @@ function PollCard({ poll }: { poll: Poll }) {
                 {/* Image grid */}
                 {!showResults ? (
                     <div className={`grid gap-3 px-5 pb-5 ${sortedOptions.length <= 2 ? 'grid-cols-2' : sortedOptions.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                        {sortedOptions.map((opt) => (
+                        {sortedOptions.map((opt) => {
+                            const isCurrentVote = userVote === opt.index;
+                            return (
                             <button
                                 key={opt.index}
                                 disabled={voteMutation.isPending}
                                 onClick={() => voteMutation.mutate(opt.index)}
                                 className="group relative rounded-xl overflow-hidden transition-all duration-200 text-left"
-                                style={{ aspectRatio: '3/4', border: '2px solid rgba(255,255,255,0.08)' }}
+                                style={{ aspectRatio: '3/4', border: isCurrentVote ? '2px solid rgba(245,184,0,0.6)' : '2px solid rgba(255,255,255,0.08)' }}
                                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(245,184,0,0.5)')}
-                                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.borderColor = isCurrentVote ? 'rgba(245,184,0,0.6)' : 'rgba(255,255,255,0.08)')}
                             >
                                 {opt.image ? (
                                     <SafeImage src={opt.image} alt={opt.label} index={opt.index} className="w-full h-full" />
@@ -132,12 +136,13 @@ function PollCard({ poll }: { poll: Poll }) {
                                     <span className="text-white font-black text-xs uppercase tracking-widest px-3 py-1.5 rounded-lg" style={{ background: 'rgba(245,184,0,0.9)', color: '#000' }}>Vote</span>
                                 </div>
                             </button>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
-                    /* Results with images */
-                    <div className="space-y-2 px-5 pb-5">
-                        {sortedOptions.map((opt, rank) => {
+                /* Results with images */
+                <div className="space-y-2 px-5 pb-5">
+                    {sortedOptions.map((opt, rank) => {
                             const votes = getVotes(opt.index);
                             const pct = getPct(opt.index);
                             const isMyVote = userVote === opt.index;
@@ -204,6 +209,30 @@ function PollCard({ poll }: { poll: Poll }) {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Change vote footer */}
+                {canChangeVote && !changingVote && (
+                    <div className="px-5 pb-4">
+                        <button
+                            onClick={() => setChangingVote(true)}
+                            className="text-xs font-semibold"
+                            style={{ color: 'rgba(255,255,255,0.3)' }}
+                        >
+                            ↩ Change my vote
+                        </button>
+                    </div>
+                )}
+                {canChangeVote && changingVote && (
+                    <div className="px-5 pb-4">
+                        <button
+                            onClick={() => setChangingVote(false)}
+                            className="text-xs font-semibold"
+                            style={{ color: 'rgba(245,184,0,0.6)' }}
+                        >
+                            ✕ Cancel
+                        </button>
                     </div>
                 )}
             </div>
@@ -318,6 +347,30 @@ function PollCard({ poll }: { poll: Poll }) {
                     );
                 })}
             </div>
+
+            {/* Change vote footer */}
+            {canChangeVote && !changingVote && (
+                <div className="px-5 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button
+                        onClick={() => setChangingVote(true)}
+                        className="text-xs font-semibold pt-3 block"
+                        style={{ color: 'rgba(255,255,255,0.3)' }}
+                    >
+                        ↩ Change my vote
+                    </button>
+                </div>
+            )}
+            {canChangeVote && changingVote && (
+                <div className="px-5 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button
+                        onClick={() => setChangingVote(false)}
+                        className="text-xs font-semibold pt-3 block"
+                        style={{ color: 'rgba(245,184,0,0.6)' }}
+                    >
+                        ✕ Cancel
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
