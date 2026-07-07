@@ -455,12 +455,19 @@ export function MatchCard({ fixture }: MatchCardProps) {
               <button onClick={() => setShowStream(false)} className="text-[10px] text-white/30 hover:text-white/60">✕ close</button>
             </div>
           </div>
-          <div style={{ position: 'relative', paddingBottom: '56.25%' /* 16:9 */ }}>
+          {/* 16:9 container — touch-action:none on wrapper passes scroll to the page */}
+          <div
+            style={{ position: 'relative', paddingBottom: '56.25%' }}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
             <iframe
               src={fixture.stream_url}
               title="Live Stream"
-              allow="autoplay; fullscreen; picture-in-picture"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
               allowFullScreen
+              // sandbox blocks popup/redirect ads while keeping the player working
+              sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+              scrolling="no"
               style={{
                 position: 'absolute',
                 top: 0, left: 0,
