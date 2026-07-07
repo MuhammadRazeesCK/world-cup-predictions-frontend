@@ -454,9 +454,10 @@ export function MatchCard({ fixture }: MatchCardProps) {
           <iframe
             src={fixture.stream_url}
             title="Live Stream"
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; camera; microphone; clipboard-write"
             allowFullScreen
-            style={{ display: 'block', width: '100%', height: '320px', border: 'none', background: '#000' }}
+            // no sandbox — mobile needs allow-popups for player init
+            style={{ display: 'block', width: '100%', height: '60vh', minHeight: '320px', border: 'none', background: '#000' }}
           />
         </div>
       )}
