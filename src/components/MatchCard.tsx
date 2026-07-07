@@ -139,6 +139,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isAdmin = user?.role === 'admin';
   const submitMutation = useSubmitPrediction();
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [showStream, setShowStream] = useState(false);
 
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<PredictionForm>({
     defaultValues: {
@@ -220,18 +221,17 @@ export function MatchCard({ fixture }: MatchCardProps) {
             </>
           )}
           {isLive && fixture.stream_url && (
-            <a
-              href={fixture.stream_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wide transition-all animate-pulse"
-              style={{ background: 'rgba(239,68,68,0.9)', color: '#fff' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#dc2626'; (e.currentTarget as HTMLElement).style.animationPlayState = 'paused'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.9)'; (e.currentTarget as HTMLElement).style.animationPlayState = 'running'; }}
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowStream((v) => !v); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wide transition-all"
+              style={{
+                background: showStream ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.9)',
+                color: '#fff',
+                animation: showStream ? 'none' : 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+              }}
             >
-              ▶ Watch
-            </a>
+              {showStream ? '✕ Close' : '▶ Watch'}
+            </button>
           )}
           {!isLive && !isCompleted && (
             <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -431,6 +431,44 @@ export function MatchCard({ fixture }: MatchCardProps) {
                 </span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Inline stream embed */}
+      {showStream && fixture.stream_url && (
+        <div style={{ borderTop: '1px solid rgba(239,68,68,0.25)', background: '#000', position: 'relative', zIndex: 1 }}>
+          <div className="flex items-center justify-between px-3 py-1.5" style={{ background: 'rgba(239,68,68,0.12)' }}>
+            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: '#f87171' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+              Live Stream
+            </span>
+            <div className="flex items-center gap-3">
+              <a
+                href={fixture.stream_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-white/30 hover:text-white/60 underline"
+              >
+                open in new tab ↗
+              </a>
+              <button onClick={() => setShowStream(false)} className="text-[10px] text-white/30 hover:text-white/60">✕ close</button>
+            </div>
+          </div>
+          <div style={{ position: 'relative', paddingBottom: '56.25%' /* 16:9 */ }}>
+            <iframe
+              src={fixture.stream_url}
+              title="Live Stream"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              style={{
+                position: 'absolute',
+                top: 0, left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              }}
+            />
           </div>
         </div>
       )}
