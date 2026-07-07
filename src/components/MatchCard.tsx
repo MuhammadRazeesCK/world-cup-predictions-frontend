@@ -437,47 +437,51 @@ export function MatchCard({ fixture }: MatchCardProps) {
 
       {/* Inline stream embed */}
       {showStream && fixture.stream_url && (
-        <div style={{ borderTop: '1px solid rgba(239,68,68,0.25)', background: '#000', position: 'relative', zIndex: 1 }}>
-          <div className="flex items-center justify-between px-3 py-1.5" style={{ background: 'rgba(239,68,68,0.12)' }}>
-            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: '#f87171' }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-              Live Stream
-            </span>
-            <div className="flex items-center gap-3">
-              <a
-                href={fixture.stream_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] text-white/30 hover:text-white/60 underline"
-              >
-                open in new tab ↗
-              </a>
-              <button onClick={() => setShowStream(false)} className="text-[10px] text-white/30 hover:text-white/60">✕ close</button>
-            </div>
-          </div>
-          {/* 16:9 container — touch-action:none on wrapper passes scroll to the page */}
+        <>
+          {/* Full-screen modal overlay */}
           <div
-            style={{ position: 'relative', paddingBottom: '56.25%' }}
-            onTouchStart={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ background: 'rgba(0,0,0,0.95)' }}
           >
+            {/* Modal toolbar */}
+            <div
+              className="flex items-center justify-between px-4 py-2 flex-shrink-0"
+              style={{ background: '#111', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <span className="text-xs font-black uppercase tracking-widest text-white/60 flex-shrink-0">Watch</span>
+                <span className="text-xs text-white/30 truncate hidden sm:block">{fixture.stream_url}</span>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <a
+                  href={fixture.stream_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-white/30 hover:text-white/60 underline"
+                >
+                  ↗ new tab
+                </a>
+                <button
+                  onClick={() => setShowStream(false)}
+                  className="text-sm font-bold px-3 py-1 rounded-lg"
+                  style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            {/* iframe fills remaining space */}
             <iframe
               src={fixture.stream_url}
               title="Live Stream"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
               allowFullScreen
-              // sandbox blocks popup/redirect ads while keeping the player working
-              sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
-              scrolling="no"
-              style={{
-                position: 'absolute',
-                top: 0, left: 0,
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
+              style={{ flex: 1, border: 'none', width: '100%' }}
             />
           </div>
-        </div>
+        </>
       )}
     </div>
   );
