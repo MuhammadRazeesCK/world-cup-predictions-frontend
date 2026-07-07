@@ -219,6 +219,20 @@ export function MatchCard({ fixture }: MatchCardProps) {
             )}
             </>
           )}
+          {isLive && fixture.stream_url && (
+            <a
+              href={fixture.stream_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wide transition-all animate-pulse"
+              style={{ background: 'rgba(239,68,68,0.9)', color: '#fff' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#dc2626'; (e.currentTarget as HTMLElement).style.animationPlayState = 'paused'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.9)'; (e.currentTarget as HTMLElement).style.animationPlayState = 'running'; }}
+            >
+              ▶ Watch
+            </a>
+          )}
           {!isLive && !isCompleted && (
             <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
               {formatKickoffIST(fixture.kickoff_time)}

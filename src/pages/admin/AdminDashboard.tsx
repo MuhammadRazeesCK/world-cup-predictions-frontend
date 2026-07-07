@@ -247,6 +247,8 @@ function FixtureList() {
   const [editFixture, setEditFixture] = useState<(Fixture & { prediction_count: number }) | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [streamEditId, setStreamEditId] = useState<string | null>(null);
+  const [streamDraft, setStreamDraft] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'fixtures'],
@@ -306,6 +308,7 @@ function FixtureList() {
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {rows?.map((f) => (
+              <>
               <tr key={f.id} className="hover:bg-slate-700/20">
                 <td className="py-2 text-text-secondary">{f.match_number}</td>
                 <td className="py-2 text-text-primary font-medium">
@@ -333,6 +336,16 @@ function FixtureList() {
                       title="Delete poster"
                     >🗑</button>
                   )}
+                  {/* Stream URL toggle */}
+                  <button
+                    onClick={() => {
+                      if (streamEditId === f.id) { setStreamEditId(null); }
+                      else { setStreamEditId(f.id); setStreamDraft(f.stream_url ?? ''); }
+                    }}
+                    className="text-xs mr-2 hover:underline"
+                    style={{ color: f.stream_url ? '#f5b800' : '#94a3b8' }}
+                    title={f.stream_url ? 'Edit stream URL' : 'Set stream URL'}
+                  >📺</button>
                   {f.status === 'completed' && (
                     <button
                       onClick={() => rescoreMutation.mutate(f.id)}
@@ -346,6 +359,47 @@ function FixtureList() {
                   )}
                 </td>
               </tr>
+              {streamEditId === f.id && (
+                <tr style={{ background: 'rgba(245,184,0,0.04)' }}>
+                  <td colSpan={7} className="py-2 px-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-white/40 flex-shrink-0">📺 Stream URL:</span>
+                      <input
+                        className="flex-1 rounded px-2 py-1 text-xs text-white min-w-0"
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(245,184,0,0.3)', outline: 'none', minWidth: '16rem' }}
+                        placeholder="https://example.com/live-stream"
+                        value={streamDraft}
+                        onChange={(e) => setStreamDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            adminApi.setStreamUrl(f.id, streamDraft || null)
+                              .then(() => { queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] }); setStreamEditId(null); setAlert({ type: 'success', message: 'Stream URL saved' }); })
+                              .catch(() => setAlert({ type: 'error', message: 'Failed to save stream URL' }));
+                          }
+                          if (e.key === 'Escape') setStreamEditId(null);
+                        }}
+                      />
+                      <button
+                        onClick={() => adminApi.setStreamUrl(f.id, streamDraft || null)
+                          .then(() => { queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] }); setStreamEditId(null); setAlert({ type: 'success', message: 'Stream URL saved' }); })
+                          .catch(() => setAlert({ type: 'error', message: 'Failed to save' }))}
+                        className="text-xs px-2 py-1 rounded font-bold"
+                        style={{ background: '#f5b800', color: '#000' }}
+                      >Save</button>
+                      {f.stream_url && (
+                        <button
+                          onClick={() => adminApi.setStreamUrl(f.id, null)
+                            .then(() => { queryClient.invalidateQueries({ queryKey: ['admin', 'fixtures'] }); setStreamEditId(null); setAlert({ type: 'success', message: 'Stream URL cleared' }); })}
+                          className="text-xs px-2 py-1 rounded font-bold"
+                          style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
+                        >Clear</button>
+                      )}
+                      <button onClick={() => setStreamEditId(null)} className="text-xs text-white/30 hover:text-white/60">✕</button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </>
             ))}
           </tbody>
         </table>

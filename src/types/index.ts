@@ -34,6 +34,7 @@ export interface Fixture {
     penalty_home_score: number | null;
     penalty_away_score: number | null;
     poster_url: string | null;
+    stream_url: string | null;
 }
 
 export interface PredictionWindow {

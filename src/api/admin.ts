@@ -61,6 +61,10 @@ export const adminApi = {
         return data;
     },
 
+    setStreamUrl: async (fixtureId: string, stream_url: string | null): Promise<void> => {
+        await apiClient.put(`/admin/fixtures/${fixtureId}/stream`, { stream_url });
+    },
+
     getFixtures: async (): Promise<ApiResponse<(Fixture & { prediction_count: number })[]>> => {
         const { data } = await apiClient.get('/admin/fixtures');
         return data;
