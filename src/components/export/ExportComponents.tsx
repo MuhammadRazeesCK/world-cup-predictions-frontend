@@ -126,7 +126,12 @@ export function MatchBanner({ fixture: f }: { fixture: FixtureExport }) {
                             <div style={{ fontSize: 80, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.03em', color: D.gold, fontVariantNumeric: 'tabular-nums', textShadow: '0 0 40px rgba(245,197,24,0.3)' }}>
                                 {f.home_score}<span style={{ color: D.textMuted, margin: '0 4px', fontSize: 64 }}>–</span>{f.away_score}
                             </div>
-                            <div style={{ marginTop: 10, fontSize: 9, fontWeight: 800, letterSpacing: '0.25em', color: D.textMuted, textTransform: 'uppercase' }}>
+                            {f.penalty_home_score != null && f.penalty_away_score != null && (
+                                <div style={{ marginTop: 6, fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', color: D.gold, opacity: 0.75, textTransform: 'uppercase' }}>
+                                    ({f.penalty_home_score} – {f.penalty_away_score} pens)
+                                </div>
+                            )}
+                            <div style={{ marginTop: 8, fontSize: 9, fontWeight: 800, letterSpacing: '0.25em', color: D.textMuted, textTransform: 'uppercase' }}>
                                 {f.status === 'live' ? '🔴 Live' : 'Full Time'}
                             </div>
                         </>

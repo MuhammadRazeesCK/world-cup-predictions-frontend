@@ -109,7 +109,12 @@ function MatchBanner({ fixture: f }: { fixture: FixtureGroup['fixture'] }) {
               <div style={{ fontSize:80, fontWeight:900, lineHeight:1, letterSpacing:'-0.03em', color:D.gold, fontVariantNumeric:'tabular-nums', textShadow:'0 0 40px rgba(245,197,24,0.3)' }}>
                 {f.home_score}<span style={{ color:D.textMuted, margin:'0 4px', fontSize:64 }}>–</span>{f.away_score}
               </div>
-              <div style={{ marginTop:10, fontSize:9, fontWeight:800, letterSpacing:'0.25em', color:D.textMuted, textTransform:'uppercase' }}>
+              {f.penalty_home_score != null && f.penalty_away_score != null && (
+                <div style={{ marginTop:6, fontSize:11, fontWeight:800, letterSpacing:'0.12em', color:D.gold, opacity:0.75, textTransform:'uppercase' }}>
+                  ({f.penalty_home_score} – {f.penalty_away_score} pens)
+                </div>
+              )}
+              <div style={{ marginTop:8, fontSize:9, fontWeight:800, letterSpacing:'0.25em', color:D.textMuted, textTransform:'uppercase' }}>
                 {f.status === 'live' ? '🔴 Live' : 'Full Time'}
               </div>
             </>
@@ -445,7 +450,7 @@ export function ExportTab() {
             <select className="input" value={predFixtureId} onChange={(e) => setPredFixtureId(e.target.value)}>
               <option value="">Select a match…</option>
               {predGroups.map(({ fixture: f, predictions }) => (
-                <option key={f.id} value={f.id}>M{f.match_number} · {f.home_team} vs {f.away_team}{f.status==='completed'&&f.home_score!==null?` · ${f.home_score}–${f.away_score} FT`:''} · {predictions.length} pred{predictions.length!==1?'s':''}</option>
+                <option key={f.id} value={f.id}>M{f.match_number} · {f.home_team} vs {f.away_team}{f.status==='completed'&&f.home_score!==null?` · ${f.home_score}–${f.away_score}${f.penalty_home_score!=null?` (${f.penalty_home_score}–${f.penalty_away_score} pens)`:''} FT`:''} · {predictions.length} pred{predictions.length!==1?'s':''}</option>
               ))}
             </select>
             <Button disabled={!predFixtureId} onClick={() => setModal('predictions')}>Preview &amp; Download PNG</Button>
@@ -483,7 +488,7 @@ export function ExportTab() {
               <select className="input" value={winnersFixtureId} onChange={(e) => setWinnersFixtureId(e.target.value)}>
                 <option value="">Select a completed match…</option>
                 {completedGroups.map(({ fixture: f }) => (
-                  <option key={f.id} value={f.id}>M{f.match_number} · {f.home_team} {f.home_score}–{f.away_score} {f.away_team}</option>
+                  <option key={f.id} value={f.id}>M{f.match_number} · {f.home_team} {f.home_score}–{f.away_score}{f.penalty_home_score!=null?` (${f.penalty_home_score}–${f.penalty_away_score} pens)`:''} {f.away_team}</option>
                 ))}
               </select>
               <Button disabled={!winnersFixtureId} onClick={() => setModal('winners')}>Preview &amp; Download PNG</Button>
