@@ -268,9 +268,9 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 function BracketView({ data }: { data: BracketData }) {
-    const stages = ['round32', 'round16', 'qf', 'sf', 'third_place', 'final'].filter(
-        (s) => (data[s] ?? []).length > 0
-    );
+    // Most advanced stage first — Final on top when it exists, then 3rd place, SF, QF, R16, R32
+    const STAGE_ORDER = ['final', 'third_place', 'sf', 'qf', 'round16', 'round32'];
+    const stages = STAGE_ORDER.filter((s) => (data[s] ?? []).length > 0);
 
     if (stages.length === 0) {
         return <div className="text-center py-12 text-white/25 text-sm">Knockout stage fixtures not added yet.</div>;
@@ -310,7 +310,7 @@ function BracketView({ data }: { data: BracketData }) {
 
 /* ─── tab config ──────────────────────────────────────────────── */
 const NAV_TABS = [
-    { key: 'bracket', label: '🗂 Bracket', catName: null },
+    { key: 'bracket', label: '🏟 Knockout', catName: null },
     { key: 'scorers', label: '⚽ Scorers', catName: 'goals' },
     { key: 'assists', label: '🎯 Assists', catName: 'assists' },
     { key: 'shots', label: '🔥 Shots', catName: 'shotsOnTarget' },
