@@ -22,6 +22,7 @@ function Skeleton() {
 
 /* ─── player row ──────────────────────────────────────────────── */
 function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: number; statLabel: string }) {
+    const [headshotFailed, setHeadshotFailed] = useState(false);
     const pct = max > 0 ? (player.value / max) * 100 : 0;
     const isFirst = player.rank === 1;
 
@@ -54,14 +55,12 @@ function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: numb
 
             {/* Headshot or flag */}
             <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                {player.headshotUrl ? (
+                {player.headshotUrl && !headshotFailed ? (
                     <img
                         src={player.headshotUrl}
                         alt={player.shortName}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                        }}
+                        onError={() => setHeadshotFailed(true)}
                     />
                 ) : player.flagUrl ? (
                     <img src={player.flagUrl} alt={player.country} className="w-full h-full object-cover" />
