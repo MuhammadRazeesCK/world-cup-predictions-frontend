@@ -31,6 +31,7 @@ export function Header() {
     { to: '/leaderboard', label: 'Standings' },
     { to: '/history', label: 'My Picks' },
     ...(!isAdmin ? [{ to: '/polls', label: 'Polls' }] : []),
+    { to: '/stats', label: 'Stats' },
     { to: '/export', label: 'Export' },
     { to: '/profile', label: 'Profile' },
   ];
@@ -60,6 +61,11 @@ export function Header() {
         <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
       </svg>
     )}] : []),
+    { to: '/stats', label: 'Stats', icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" />
+      </svg>
+    )},
     { to: '/export', label: 'Export', icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />

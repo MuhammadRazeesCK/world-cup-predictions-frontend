@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { UserExport } from './pages/UserExport';
 import PollsPage from './pages/Polls';
+import StatsPage from './pages/Stats';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/export" element={<RequireAuth><UserExport /></RequireAuth>} />
             <Route path="/polls" element={<RequireAuth><PollsPage /></RequireAuth>} />
+            <Route path="/stats" element={<RequireAuth><StatsPage /></RequireAuth>} />
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
