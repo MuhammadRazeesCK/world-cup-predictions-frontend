@@ -223,6 +223,11 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
   const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
+  // Show stream button when live OR within 2 hours of kickoff (for testing)
+  const kickoffMs = fixture.kickoff_time ? new Date(fixture.kickoff_time).getTime() : null;
+  const isPreMatch = kickoffMs != null && !isCompleted && kickoffMs - Date.now() <= 2 * 60 * 60 * 1000;
+  const showStreamButton = (isLive || isPreMatch) && !!fixture.stream_url;
+
   const { data: liveData } = useLiveData(fixture.id, isLive && !!fixture.api_fixture_id, isCompleted && !!fixture.api_fixture_id);
 
   return (
@@ -264,7 +269,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
             )}
             </>
           )}
-          {isLive && fixture.stream_url && (
+          {showStreamButton && (
             <button
               onClick={(e) => { e.stopPropagation(); showStream ? closeStream() : openStream(); }}
               className="flex items-center gap-1 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wide transition-all"
