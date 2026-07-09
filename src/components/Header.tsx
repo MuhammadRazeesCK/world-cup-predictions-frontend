@@ -190,7 +190,8 @@ export function Header() {
             borderTop: '1px solid rgba(255,255,255,0.08)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            paddingBottom: 'env(safe-area-inset-bottom)',
+            gap: '2px',
+            padding: '4px 8px max(8px, env(safe-area-inset-bottom))',
           }}
         >
           {mobileLinks.map((link) => {
@@ -200,11 +201,15 @@ export function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative"
-                style={{ color: active ? '#f5b800' : 'rgba(255,255,255,0.35)' }}
+                className="flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 relative rounded-xl transition-all"
+                style={{
+                  color: active ? '#f5b800' : 'rgba(255,255,255,0.35)',
+                  background: active ? 'rgba(245,184,0,0.08)' : 'transparent',
+                  minWidth: 0,
+                }}
               >
-                <span className="relative">
-                  {link.icon}
+                <span className="relative w-5 h-5 flex items-center justify-center">
+                  <span className="scale-90">{link.icon}</span>
                   {isPollsLink && unvotedCount > 0 && (
                     <span
                       className="absolute -top-1 -right-1 min-w-[14px] h-3.5 rounded-full flex items-center justify-center text-[8px] font-black px-0.5"
@@ -214,7 +219,7 @@ export function Header() {
                     </span>
                   )}
                 </span>
-                <span className="text-[9px] font-bold uppercase tracking-wide">{link.label}</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider truncate w-full text-center">{link.label}</span>
               </Link>
             );
           })}

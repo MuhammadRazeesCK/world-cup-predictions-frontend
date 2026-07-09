@@ -43,9 +43,30 @@ export interface TournamentStats {
     fetchedAt: string;
 }
 
+export interface BracketFixture {
+    id: string;
+    match_number: number;
+    home_team: string;
+    away_team: string;
+    home_score: number | null;
+    away_score: number | null;
+    penalty_home_score: number | null;
+    penalty_away_score: number | null;
+    penalty_enabled: boolean;
+    stage: string;
+    status: string;
+    kickoff_time: string;
+}
+
+export type BracketData = Record<string, BracketFixture[]>;
+
 export const statsApi = {
     getTournament: async (): Promise<TournamentStats> => {
         const { data } = await apiClient.get('/stats/tournament');
+        return data.data;
+    },
+    getBracket: async (): Promise<BracketData> => {
+        const { data } = await apiClient.get('/stats/bracket');
         return data.data;
     },
 };

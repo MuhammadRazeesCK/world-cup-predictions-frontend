@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { statsApi, PlayerLeader, StatCategory, Group } from '../api/stats';
+import { statsApi, PlayerLeader, StatCategory, Group, BracketFixture, BracketData } from '../api/stats';
+import { DateTime } from 'luxon';
+
+function formatKickoff(iso: string) {
+    return DateTime.fromISO(iso).setZone('Asia/Kolkata').toFormat('d MMM, h:mm a');
+}
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 function Skeleton() {
@@ -180,8 +185,132 @@ function GroupTable({ group }: { group: Group }) {
     );
 }
 
-/* ─── page ────────────────────────────────────────────────────── */
+/* ─── bracket match card ──────────────────────────────────────── */
+function BracketMatch({ f, label }: { f: BracketFixture | null; label: string }) {
+    const isDone = f?.status === 'completed';
+    const isLive = f?.status === 'live';
+    const hasPens = isDone && f!.penalty_home_score != null;
+
+    const homeWon = isDone && f!.home_score != null && f!.away_score != null && (
+        hasPens ? f!.penalty_home_score! > f!.penalty_away_score! : f!.home_score > f!.away_score
+    );
+    const awayWon = isDone && !homeWon;
+
+    return (
+        <div
+            className="rounded-xl overflow-hidden w-full"
+            style={{
+                background: isDone ? 'rgba(255,255,255,0.04)' : isLive ? 'rgba(22,163,74,0.06)' : 'rgba(255,255,255,0.02)',
+                border: isLive ? '1px solid rgba(22,163,74,0.3)' : '1px solid rgba(255,255,255,0.07)',
+            }}
+        >
+            {/* Label */}
+            <div className="px-3 py-1 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/25">{label}</span>
+                {f && (
+                    <span className="text-[9px] text-white/20">
+                        {isDone ? 'FT' : isLive ? '🔴 LIVE' : formatKickoff(f.kickoff_time)}
+                    </span>
+                )}
+            </div>
+
+            {/* Teams */}
+            <div className="px-3 py-2 space-y-1">
+                {f ? (
+                    <>
+                        {/* Home */}
+                        <div className="flex items-center justify-between gap-2">
+                            <span
+                                className="text-xs font-bold truncate"
+                                style={{ color: homeWon ? '#f5b800' : isDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.85)' }}
+                            >
+                                {homeWon && <span className="mr-1">🏆</span>}{f.home_team}
+                            </span>
+                            {f.home_score != null && (
+                                <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ fontFamily: '"Bebas Neue", sans-serif', color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.5)' }}>
+                                    {f.home_score}{hasPens ? ` (${f.penalty_home_score})` : ''}
+                                </span>
+                            )}
+                        </div>
+                        {/* Away */}
+                        <div className="flex items-center justify-between gap-2">
+                            <span
+                                className="text-xs font-bold truncate"
+                                style={{ color: awayWon ? '#f5b800' : isDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.85)' }}
+                            >
+                                {awayWon && <span className="mr-1">🏆</span>}{f.away_team}
+                            </span>
+                            {f.away_score != null && (
+                                <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ fontFamily: '"Bebas Neue", sans-serif', color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.5)' }}>
+                                    {f.away_score}{hasPens ? ` (${f.penalty_away_score})` : ''}
+                                </span>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="h-4 rounded animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                        <div className="h-4 rounded animate-pulse w-3/4" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const STAGE_LABELS: Record<string, string> = {
+    round32: 'Round of 32',
+    round16: 'Round of 16',
+    qf: 'Quarter-Finals',
+    sf: 'Semi-Finals',
+    third_place: '3rd Place',
+    final: 'Final',
+};
+
+function BracketView({ data }: { data: BracketData }) {
+    const stages = ['round32', 'round16', 'qf', 'sf', 'third_place', 'final'].filter(
+        (s) => (data[s] ?? []).length > 0
+    );
+
+    if (stages.length === 0) {
+        return <div className="text-center py-12 text-white/25 text-sm">Knockout stage fixtures not added yet.</div>;
+    }
+
+    return (
+        <div className="space-y-6">
+            {stages.map((stage) => {
+                const fixtures = data[stage] ?? [];
+                return (
+                    <div key={stage}>
+                        {/* Stage header */}
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-0.5 h-4 rounded-full" style={{ background: '#f5b800' }} />
+                            <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                                {STAGE_LABELS[stage] ?? stage}
+                            </h3>
+                            <span className="text-[10px] text-white/25">{fixtures.length} match{fixtures.length !== 1 ? 'es' : ''}</span>
+                        </div>
+
+                        {/* Match grid */}
+                        <div className={`grid gap-3 ${fixtures.length >= 4 ? 'grid-cols-2' : fixtures.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' : 'grid-cols-2 sm:grid-cols-2'}`}>
+                            {fixtures.map((f, i) => (
+                                <BracketMatch
+                                    key={f.id}
+                                    f={f}
+                                    label={`Match ${f.match_number}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+/* ─── tab config ──────────────────────────────────────────────── */
 const NAV_TABS = [
+    { key: 'bracket', label: '🗂 Bracket', catName: null },
     { key: 'scorers', label: '⚽ Scorers', catName: 'goals' },
     { key: 'assists', label: '🎯 Assists', catName: 'assists' },
     { key: 'shots', label: '🔥 Shots', catName: 'shotsOnTarget' },
@@ -191,13 +320,19 @@ const NAV_TABS = [
 ];
 
 export default function StatsPage() {
-    const [activeTab, setActiveTab] = useState('scorers');
+    const [activeTab, setActiveTab] = useState('bracket');
 
     const { data, isLoading, error, dataUpdatedAt } = useQuery({
         queryKey: ['tournament-stats'],
         queryFn: statsApi.getTournament,
-        staleTime: 4 * 60 * 1000, // 4 min (backend caches 5 min)
+        staleTime: 4 * 60 * 1000,
         retry: 1,
+    });
+
+    const { data: bracketData, isLoading: bracketLoading } = useQuery({
+        queryKey: ['bracket'],
+        queryFn: statsApi.getBracket,
+        staleTime: 60_000,
     });
 
     const activeTabCfg = NAV_TABS.find((t) => t.key === activeTab)!;
@@ -254,7 +389,14 @@ export default function StatsPage() {
                     </div>
                 )}
 
-                {!isLoading && !error && activeTab !== 'groups' && (
+                {/* Bracket tab — uses our own DB, independent of ESPN */}
+                {activeTab === 'bracket' && (
+                    bracketLoading
+                        ? <Skeleton />
+                        : <BracketView data={bracketData ?? {}} />
+                )}
+
+                {!isLoading && !error && activeTab !== 'groups' && activeTab !== 'bracket' && (
                     <>
                         {activeCategory ? (
                             <CategoryPanel cat={activeCategory} />
