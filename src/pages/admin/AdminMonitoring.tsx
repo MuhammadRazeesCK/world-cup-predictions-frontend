@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { adminApi } from '../../api/admin';
 import { DateTime } from 'luxon';
+import apiClient from '../../api/client';
 
 function formatDuration(ms: number): string {
     if (ms < 1000) return `${ms}ms`;
@@ -110,6 +111,19 @@ export default function AdminMonitoring() {
     const { data, isLoading, dataUpdatedAt } = useQuery({
         queryKey: ['admin-monitoring'],
         queryFn: () => adminApi.getMonitoring(),
+        refetchInterval: 15_000,
+    });
+
+    const { data: streamData } = useQuery({
+        queryKey: ['admin-stream-views'],
+        queryFn: async () => {
+            const { data } = await apiClient.get('/admin/monitoring/stream-views');
+            return data.data as {
+                views: any[];
+                byFixture: any[];
+                liveViewers: any[];
+            };
+        },
         refetchInterval: 15_000,
     });
 
@@ -502,6 +516,104 @@ export default function AdminMonitoring() {
                         </div>
                     ))}
                 </div>
+            </CollapsiblePanel>
+
+            {/* ── Stream Views ─────────────────────────────────────────────── */}
+            <CollapsiblePanel
+                title="📺 Stream Views"
+                badge={streamData ? `${streamData.byFixture.reduce((s: number, f: any) => s + Number(f.total_views), 0)} total` : undefined}
+            >
+                {/* Live now */}
+                {(streamData?.liveViewers ?? []).length > 0 && (
+                    <div className="mb-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-green-400/70 mb-2 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                            Watching Right Now ({streamData!.liveViewers.length})
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {streamData!.liveViewers.map((v: any, i: number) => (
+                                <span key={i} className="text-xs px-2.5 py-1 rounded-lg font-medium"
+                                    style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
+                                    @{v.username} — {v.home_team} vs {v.away_team}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Per fixture summary */}
+                {(streamData?.byFixture ?? []).length > 0 && (
+                    <div className="mb-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">By Match</p>
+                        <div className="space-y-2">
+                            {streamData!.byFixture.map((f: any, i: number) => {
+                                const avg = f.avg_duration_seconds ? `${Math.floor(f.avg_duration_seconds / 60)}m ${f.avg_duration_seconds % 60}s` : '—';
+                                const max = f.max_duration_seconds ? `${Math.floor(f.max_duration_seconds / 60)}m ${f.max_duration_seconds % 60}s` : '—';
+                                return (
+                                    <div key={i} className="flex items-center justify-between rounded-lg px-3 py-2"
+                                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div>
+                                            <p className="text-xs font-semibold text-white/80">M{f.match_number} · {f.home_team} vs {f.away_team}</p>
+                                            <p className="text-[10px] text-white/30 mt-0.5">avg watch {avg} · max {max}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black" style={{ color: '#f5b800' }}>{f.total_views}</p>
+                                            <p className="text-[10px] text-white/30">{f.unique_viewers} unique</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recent view log */}
+                {(streamData?.views ?? []).length > 0 && (
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">Recent Views</p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="text-white/25 text-left border-b border-white/06">
+                                        <th className="pb-1.5">User</th>
+                                        <th className="pb-1.5">Match</th>
+                                        <th className="pb-1.5">Opened</th>
+                                        <th className="pb-1.5">Duration</th>
+                                        <th className="pb-1.5">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/05">
+                                    {streamData!.views.slice(0, 50).map((v: any) => {
+                                        const dur = v.duration_seconds != null
+                                            ? `${Math.floor(v.duration_seconds / 60)}m ${v.duration_seconds % 60}s`
+                                            : '—';
+                                        return (
+                                            <tr key={v.id} className="text-white/60">
+                                                <td className="py-1.5 font-medium">@{v.username}</td>
+                                                <td className="py-1.5">M{v.match_number} · {v.home_team} vs {v.away_team}</td>
+                                                <td className="py-1.5 text-white/30">{DateTime.fromISO(v.opened_at).setZone('Asia/Kolkata').toFormat('d MMM h:mm a')}</td>
+                                                <td className="py-1.5">{dur}</td>
+                                                <td className="py-1.5">
+                                                    {!v.closed_at ? (
+                                                        <span className="text-green-400">● live</span>
+                                                    ) : v.abandoned ? (
+                                                        <span className="text-yellow-400">⚡ abandoned</span>
+                                                    ) : (
+                                                        <span className="text-white/30">✓ closed</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {(streamData?.views ?? []).length === 0 && (
+                    <p className="text-sm text-white/25">No stream views yet.</p>
+                )}
             </CollapsiblePanel>
 
         </div>

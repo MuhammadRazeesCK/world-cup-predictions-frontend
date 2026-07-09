@@ -140,6 +140,50 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const submitMutation = useSubmitPrediction();
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [showStream, setShowStream] = useState(false);
+  const streamViewId = useState<string | null>(null);
+  const streamOpenedAt = useState<number | null>(null);
+
+  // Fire open/close events for stream view tracking
+  const openStream = async () => {
+    setShowStream(true);
+    streamOpenedAt[1](Date.now());
+    try {
+      const { data } = await apiClient.post(`/fixtures/${fixture.id}/stream-view/open`);
+      streamViewId[1](data.view_id ?? null);
+    } catch { /* non-fatal */ }
+  };
+
+  const closeStream = async (abandoned = false) => {
+    setShowStream(false);
+    const openedAt = streamOpenedAt[0];
+    const duration = openedAt ? Math.round((Date.now() - openedAt) / 1000) : null;
+    streamOpenedAt[1](null);
+    const viewId = streamViewId[0];
+    streamViewId[1](null);
+    try {
+      await apiClient.post(`/fixtures/${fixture.id}/stream-view/close`, {
+        view_id: viewId,
+        duration_seconds: duration,
+        abandoned,
+      });
+    } catch { /* non-fatal */ }
+  };
+
+  // Close + record if user navigates away while stream is open
+  useEffect(() => {
+    if (!showStream) return;
+    const handleUnload = () => {
+      const openedAt = streamOpenedAt[0];
+      const duration = openedAt ? Math.round((Date.now() - openedAt) / 1000) : null;
+      // Use sendBeacon for reliability on page unload
+      navigator.sendBeacon(
+        `${apiClient.defaults.baseURL ?? '/api'}/fixtures/${fixture.id}/stream-view/close`,
+        JSON.stringify({ view_id: streamViewId[0], duration_seconds: duration, abandoned: true }),
+      );
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [showStream, fixture.id]);
 
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<PredictionForm>({
     defaultValues: {
@@ -222,7 +266,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
           )}
           {isLive && fixture.stream_url && (
             <button
-              onClick={(e) => { e.stopPropagation(); setShowStream((v) => !v); }}
+              onClick={(e) => { e.stopPropagation(); showStream ? closeStream() : openStream(); }}
               className="flex items-center gap-1 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wide transition-all"
               style={{
                 background: showStream ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.9)',
@@ -448,7 +492,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
             </span>
             <div className="flex items-center gap-3">
               <a href={fixture.stream_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-white/25 hover:text-white/50 underline">↗ new tab</a>
-              <button onClick={() => setShowStream(false)} className="text-[10px] text-white/25 hover:text-white/50">✕</button>
+              <button onClick={() => closeStream()} className="text-[10px] text-white/25 hover:text-white/50">✕</button>
             </div>
           </div>
           <iframe
