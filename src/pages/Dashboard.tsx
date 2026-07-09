@@ -100,7 +100,7 @@ function RankBadge({ rank }: { rank: number }) {
 import React from 'react';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: available, isLoading, error } = useAvailableFixtures();
   const { data: stats } = useUserStats();
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
@@ -118,7 +118,7 @@ export default function Dashboard() {
   const [pollModalDismissed, setPollModalDismissed] = useState(() =>
     !!sessionStorage.getItem('poll_modal_shown')
   );
-  const showPollModal = unvotedPolls.length > 0 && !pollModalDismissed;
+  const showPollModal = unvotedPolls.length > 0 && !pollModalDismissed && !isAdmin;
   function dismissPollModal() {
     sessionStorage.setItem('poll_modal_shown', '1');
     setPollModalDismissed(true);
@@ -256,7 +256,7 @@ export default function Dashboard() {
         )}
 
         {/* Live polls banner — persistent strip above stats */}
-        {unvotedPolls.length > 0 && (
+        {unvotedPolls.length > 0 && !isAdmin && (
           <Link
             to="/polls"
             className="flex items-center justify-between rounded-xl px-4 py-3.5 transition-all"

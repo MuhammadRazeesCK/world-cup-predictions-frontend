@@ -203,8 +203,8 @@ export function Header() {
                 to={link.to}
                 className="flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 relative rounded-xl transition-all"
                 style={{
-                  color: active ? '#f5b800' : 'rgba(255,255,255,0.35)',
-                  background: active ? 'rgba(245,184,0,0.08)' : 'transparent',
+                  color: active ? '#f5b800' : 'rgba(255,255,255,0.55)',
+                  background: active ? 'rgba(245,184,0,0.1)' : 'transparent',
                   minWidth: 0,
                 }}
               >
@@ -219,7 +219,7 @@ export function Header() {
                     </span>
                   )}
                 </span>
-                <span className="text-[8px] font-bold uppercase tracking-wider truncate w-full text-center">{link.label}</span>
+                <span className="text-[9px] font-bold tracking-wide truncate w-full text-center">{link.label}</span>
               </Link>
             );
           })}
