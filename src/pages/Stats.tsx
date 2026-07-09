@@ -54,7 +54,7 @@ function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: numb
             </span>
 
             {/* Headshot or flag */}
-            <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 {player.headshotUrl && !headshotFailed ? (
                     <img
                         src={player.headshotUrl}
@@ -63,7 +63,9 @@ function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: numb
                         onError={() => setHeadshotFailed(true)}
                     />
                 ) : player.flagUrl ? (
-                    <img src={player.flagUrl} alt={player.country} className="w-full h-full object-cover" />
+                    <div className="w-full h-full flex items-center justify-center p-1.5">
+                        <img src={player.flagUrl} alt={player.country} className="w-full h-auto rounded-sm object-cover" />
+                    </div>
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">
                         {player.name.charAt(0)}
@@ -77,7 +79,6 @@ function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: numb
                     {player.name}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                    {player.flagUrl && !player.headshotUrl && null}
                     <p className="text-[11px] text-white/35 truncate">{player.country}</p>
                 </div>
             </div>
