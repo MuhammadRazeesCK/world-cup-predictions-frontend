@@ -1,5 +1,20 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { BracketFixture, BracketData } from '../api/stats';
+
+/* Country name → flag emoji */
+const FLAGS: Record<string, string> = {
+    'France': '🇫🇷', 'Morocco': '🇲🇦', 'Norway': '🇳🇴', 'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    'Argentina': '🇦🇷', 'Switzerland': '🇨🇭', 'Spain': '🇪🇸', 'Belgium': '🇧🇪',
+    'Brazil': '🇧🇷', 'Mexico': '🇲🇽', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱',
+    'Germany': '🇩🇪', 'USA': '🇺🇸', 'United States': '🇺🇸', 'Canada': '🇨🇦',
+    'Japan': '🇯🇵', 'Croatia': '🇭🇷', 'South Africa': '🇿🇦', 'Australia': '🇦🇺',
+    'Paraguay': '🇵🇾', 'Sweden': '🇸🇪', 'Ivory Coast': '🇨🇮', 'Ecuador': '🇪🇨',
+    'DR Congo': '🇨🇩', 'Congo DR': '🇨🇩', 'Senegal': '🇸🇳', 'Egypt': '🇪🇬',
+    'Bosnia and Herzegovina': '🇧🇦', 'Bosnia-Herzegovina': '🇧🇦',
+    'Algeria': '🇩🇿', 'Colombia': '🇨🇴', 'Ghana': '🇬🇭', 'Cape Verde': '🇨🇻',
+    'Cape Verde Islands': '🇨🇻', 'Austria': '🇦🇹',
+};
+const flag = (t: string) => FLAGS[t] ?? '🏳️';
 
 /* WC 2026 actual match numbers from DB */
 const LEFT_BRACKET = [
@@ -47,15 +62,15 @@ function Card({ n, data, w = 118 }: { n: number; data: BracketData; w?: number }
             </div>
             {/* Home */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: homeWon ? 'rgba(245,184,0,0.08)' : 'transparent', minHeight: 22 }}>
-                <span style={{ fontSize: 10, fontWeight: homeWon ? 800 : 500, color: homeWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32 }}>
-                    {f ? sh(f.home_team) : '—'}
+                <span style={{ fontSize: 10, fontWeight: homeWon ? 800 : 500, color: homeWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32, display: 'flex', alignItems: 'center', gap: 3 }}>
+                    {f ? <><span style={{ fontSize: 11 }}>{flag(f.home_team)}</span>{sh(f.home_team)}</> : '—'}
                 </span>
                 {f?.home_score != null && <span style={{ fontSize: 12, fontWeight: 900, color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0, marginLeft: 4 }}>{f.home_score}{pens ? `(${f.penalty_home_score})` : ''}</span>}
             </div>
             {/* Away */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: awayWon ? 'rgba(245,184,0,0.08)' : 'transparent', minHeight: 22, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: 10, fontWeight: awayWon ? 800 : 500, color: awayWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32 }}>
-                    {f ? sh(f.away_team) : '—'}
+                <span style={{ fontSize: 10, fontWeight: awayWon ? 800 : 500, color: awayWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32, display: 'flex', alignItems: 'center', gap: 3 }}>
+                    {f ? <><span style={{ fontSize: 11 }}>{flag(f.away_team)}</span>{sh(f.away_team)}</> : '—'}
                 </span>
                 {f?.away_score != null && <span style={{ fontSize: 12, fontWeight: 900, color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0, marginLeft: 4 }}>{f.away_score}{pens ? `(${f.penalty_away_score})` : ''}</span>}
             </div>
@@ -136,9 +151,32 @@ export function FullBracket({ data }: { data: BracketData }) {
         </div>
     );
 
+    // Pinch-to-zoom
+    const [zoom, setZoom] = useState(0.58);
+    const lastDist = useRef<number | null>(null);
+    const onTouchStart = (e: React.TouchEvent) => {
+        if (e.touches.length === 2)
+            lastDist.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    };
+    const onTouchMove = (e: React.TouchEvent) => {
+        if (e.touches.length === 2 && lastDist.current !== null) {
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            setZoom(z => Math.min(1.6, Math.max(0.3, z + (d - lastDist.current!) / 220)));
+            lastDist.current = d;
+        }
+    };
+    const onTouchEnd = () => { lastDist.current = null; };
+
     return (
-        <div style={{ overflowX: 'auto', paddingBottom: 16, paddingTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: COL, padding: '0 8px', minWidth: 'max-content' }}>
+        <div
+            style={{ overflowX: 'auto', paddingBottom: 16, paddingTop: 4, touchAction: 'pan-x pan-y' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* Zoom hint */}
+            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginBottom: 6 }}>Pinch to zoom · scroll sideways</p>
+            <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', display: 'inline-flex', alignItems: 'flex-start', gap: COL, padding: '0 8px' }}>
 
                 <div><ColHeader label="R32" />{R32(LEFT_BRACKET)}</div>
                 <div><ColHeader label="R16" />{R16(LEFT_BRACKET)}</div>
