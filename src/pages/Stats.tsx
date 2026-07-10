@@ -6,6 +6,7 @@ import { statsApi, PlayerLeader, StatCategory, Group, BracketFixture, BracketDat
 import { DateTime } from 'luxon';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
+import { FullBracket } from '../components/FullBracket';
 
 function formatKickoff(iso: string) {
     return DateTime.fromISO(iso).setZone('Asia/Kolkata').toFormat('d MMM, h:mm a');
@@ -414,11 +415,11 @@ export default function StatsPage() {
                     </div>
                 )}
 
-                {/* Bracket tab — uses our own DB, independent of ESPN */}
+                {/* Bracket tab — full visual bracket */}
                 {activeTab === 'bracket' && (
                     bracketLoading
                         ? <Skeleton />
-                        : <BracketView data={bracketData ?? {}} />
+                        : <FullBracket data={bracketData ?? {}} />
                 )}
 
                 {!isLoading && !error && activeTab !== 'groups' && activeTab !== 'bracket' && (
