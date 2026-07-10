@@ -70,7 +70,6 @@ const TOTAL_H = SLOT * 8 + (CH - SLOT); // = 8*82 + (62-82) = 656 - 20 = 636? No
 // Actually: totalH = r32[7].bottom = SLOT * 7 + CH
 const TOTAL_H_CALC = SLOT * 7 + CH;
 
-// X positions (absolute, left to right)
 const x = {
     r32L:  0,
     r16L:  W.r32 + CGAP,
@@ -84,8 +83,32 @@ const x = {
 };
 const TOTAL_W = x.r32R + W.r32;
 
+/* ─── winner propagation helpers ─────────────────────────────────── */
+function getWinner(data: BracketData, n: number): string | null {
+    const f = get(data, n);
+    if (!f || f.status !== 'completed' || f.home_score === null) return null;
+    const pens = f.penalty_home_score != null;
+    return (pens ? f.penalty_home_score! > f.penalty_away_score! : f.home_score > f.away_score!)
+        ? f.home_team : f.away_team;
+}
+
+// Returns winner name if match done, or "Team1 / Team2" if scheduled, or null
+function projected(data: BracketData, n: number): string | null {
+    const f = get(data, n);
+    if (!f) return null;
+    const w = getWinner(data, n);
+    if (w) return w;
+    // Scheduled — show both potential teams
+    return `${sh(f.home_team)} / ${sh(f.away_team)}`;
+}
+
 /* ─── card component ─────────────────────────────────────────────── */
-function Card({ n, data, w, style }: { n: number; data: BracketData; w: number; style?: React.CSSProperties }) {
+// projHome/projAway: shown when no real fixture exists for this slot
+function Card({ n, data, w, projHome, projAway, style }: {
+    n: number; data: BracketData; w: number;
+    projHome?: string | null; projAway?: string | null;
+    style?: React.CSSProperties;
+}) {
     const f = get(data, n);
     const done = f?.status === 'completed';
     const live = f?.status === 'live';
@@ -95,10 +118,19 @@ function Card({ n, data, w, style }: { n: number; data: BracketData; w: number; 
     const border = live ? 'rgba(34,197,94,0.6)' : done ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)';
     const bg = live ? 'rgba(34,197,94,0.07)' : done ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
 
-    const teamRow = (team: string | undefined, score: number | null | undefined, penScore: number | null | undefined, won: boolean) => (
+    // Use projected team if no real fixture team available
+    const homeTeam = f?.home_team ?? undefined;
+    const awayTeam = f?.away_team ?? undefined;
+    const dispHome = homeTeam ?? projHome ?? undefined;
+    const dispAway = awayTeam ?? projAway ?? undefined;
+    // A projected (not-yet-played) entry: italic, dimmer
+    const homeIsProj = !homeTeam && !!projHome;
+    const awayIsProj = !awayTeam && !!projAway;
+
+    const teamRow = (team: string | undefined, score: number | null | undefined, penScore: number | null | undefined, won: boolean, isProj: boolean) => (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 6px', height: 24, background: won ? 'rgba(245,184,0,0.1)' : 'transparent' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: won ? 800 : 500, color: won ? '#f5b800' : team ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.18)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 34 }}>
-                {team ? <><span style={{ fontSize: 12, lineHeight: 1 }}>{fl(team)}</span>{sh(team)}</> : <span>—</span>}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: isProj ? 9 : 10, fontWeight: won ? 800 : isProj ? 400 : 500, fontStyle: isProj ? 'italic' : 'normal', color: won ? '#f5b800' : team ? 'rgba(255,255,255,0.85)' : isProj ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 12 }}>
+                {team ? <><span style={{ fontSize: 12, lineHeight: 1 }}>{fl(team)}</span>{sh(team)}</> : isProj ? <span>{dispHome === team ? projHome : projAway}</span> : <span>—</span>}
             </span>
             {score != null && <span style={{ fontSize: 13, fontWeight: 900, color: won ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue",sans-serif', flexShrink: 0 }}>{score}{pens ? `(${penScore})` : ''}</span>}
         </div>
@@ -109,10 +141,11 @@ function Card({ n, data, w, style }: { n: number; data: BracketData; w: number; 
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
                 {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
                 {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
+                {!f && (dispHome || dispAway) && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>upcoming</span>}
             </div>
-            {teamRow(f?.home_team, f?.home_score, f?.penalty_home_score, homeWon)}
+            {teamRow(homeTeam, f?.home_score, f?.penalty_home_score, homeWon, homeIsProj)}
             <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-            {teamRow(f?.away_team, f?.away_score, f?.penalty_away_score, awayWon)}
+            {teamRow(awayTeam, f?.away_score, f?.penalty_away_score, awayWon, awayIsProj)}
         </div>
     );
 }
@@ -278,10 +311,16 @@ export function FullBracket({ data }: { data: BracketData }) {
                     ))}
 
                     {/* LEFT SF */}
-                    <Card n={101} data={data} w={W.sf} style={{ left: x.sfL, top: sfcy - CH / 2 }} />
+                    <Card n={101} data={data} w={W.sf}
+                        projHome={projected(data, 57)}
+                        projAway={projected(data, 58)}
+                        style={{ left: x.sfL, top: sfcy - CH / 2 }} />
 
                     {/* FINAL */}
-                    <Card n={104} data={data} w={W.final} style={{ left: x.final, top: sfcy - CH / 2 }} />
+                    <Card n={104} data={data} w={W.final}
+                        projHome={projected(data, 101)}
+                        projAway={projected(data, 102)}
+                        style={{ left: x.final, top: sfcy - CH / 2 }} />
 
                     {/* 3RD PLACE label + card */}
                     <div style={{ position: 'absolute', left: x.final, top: sfcy + CH / 2 + 18, width: W.final, textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.28)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -290,7 +329,10 @@ export function FullBracket({ data }: { data: BracketData }) {
                     <Card n={103} data={data} w={W.final} style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
 
                     {/* RIGHT SF */}
-                    <Card n={102} data={data} w={W.sf} style={{ left: x.sfR, top: sfcy - CH / 2 }} />
+                    <Card n={102} data={data} w={W.sf}
+                        projHome={projected(data, 59)}
+                        projAway={projected(data, 60)}
+                        style={{ left: x.sfR, top: sfcy - CH / 2 }} />
 
                     {/* RIGHT QF cards */}
                     {[59, 60].map((mn, k) => (
