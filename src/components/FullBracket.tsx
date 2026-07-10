@@ -121,16 +121,11 @@ function Card({ n, data, w, projHome, projAway, style }: {
     // Use projected team if no real fixture team available
     const homeTeam = f?.home_team ?? undefined;
     const awayTeam = f?.away_team ?? undefined;
-    const dispHome = homeTeam ?? projHome ?? undefined;
-    const dispAway = awayTeam ?? projAway ?? undefined;
-    // A projected (not-yet-played) entry: italic, dimmer
-    const homeIsProj = !homeTeam && !!projHome;
-    const awayIsProj = !awayTeam && !!projAway;
 
-    const teamRow = (team: string | undefined, score: number | null | undefined, penScore: number | null | undefined, won: boolean, isProj: boolean) => (
+    const teamRow = (team: string | undefined, score: number | null | undefined, penScore: number | null | undefined, won: boolean, projText?: string | null) => (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 6px', height: 24, background: won ? 'rgba(245,184,0,0.1)' : 'transparent' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: isProj ? 9 : 10, fontWeight: won ? 800 : isProj ? 400 : 500, fontStyle: isProj ? 'italic' : 'normal', color: won ? '#f5b800' : team ? 'rgba(255,255,255,0.85)' : isProj ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 12 }}>
-                {team ? <><span style={{ fontSize: 12, lineHeight: 1 }}>{fl(team)}</span>{sh(team)}</> : isProj ? <span>{dispHome === team ? projHome : projAway}</span> : <span>—</span>}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: projText && !team ? 9 : 10, fontWeight: won ? 800 : projText && !team ? 400 : 500, fontStyle: projText && !team ? 'italic' : 'normal', color: won ? '#f5b800' : team ? 'rgba(255,255,255,0.85)' : projText ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 12 }}>
+                {team ? <><span style={{ fontSize: 12, lineHeight: 1 }}>{fl(team)}</span>{sh(team)}</> : projText ? <span>{projText}</span> : <span>—</span>}
             </span>
             {score != null && <span style={{ fontSize: 13, fontWeight: 900, color: won ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue",sans-serif', flexShrink: 0 }}>{score}{pens ? `(${penScore})` : ''}</span>}
         </div>
@@ -141,11 +136,11 @@ function Card({ n, data, w, projHome, projAway, style }: {
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
                 {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
                 {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
-                {!f && (dispHome || dispAway) && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>upcoming</span>}
+                {!f && (projHome || projAway) && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>upcoming</span>}
             </div>
-            {teamRow(homeTeam, f?.home_score, f?.penalty_home_score, homeWon, homeIsProj)}
+            {teamRow(homeTeam, f?.home_score, f?.penalty_home_score, homeWon, !homeTeam ? projHome : null)}
             <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-            {teamRow(awayTeam, f?.away_score, f?.penalty_away_score, awayWon, awayIsProj)}
+            {teamRow(awayTeam, f?.away_score, f?.penalty_away_score, awayWon, !awayTeam ? projAway : null)}
         </div>
     );
 }
