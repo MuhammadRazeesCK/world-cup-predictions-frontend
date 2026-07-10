@@ -1,13 +1,16 @@
 import React, { useRef, useState } from 'react';
 import { BracketFixture, BracketData } from '../api/stats';
 
-const LEFT_BRACKET = [
+/* ─── WC 2026 bracket match numbers ────────────────────────────── */
+// Left side: R32[arm][0,1] → R16[arm] → QF[group]
+const L = [
     { r32: [33, 36], r16: 49, qf: 57 },
     { r32: [35, 38], r16: 50, qf: 57 },
     { r32: [43, 44], r16: 53, qf: 58 },
     { r32: [41, 42], r16: 54, qf: 58 },
 ];
-const RIGHT_BRACKET = [
+// Right side (same structure)
+const R = [
     { r32: [34, 37], r16: 51, qf: 59 },
     { r32: [39, 40], r16: 52, qf: 59 },
     { r32: [45, 48], r16: 56, qf: 60 },
@@ -15,262 +18,285 @@ const RIGHT_BRACKET = [
 ];
 
 function get(data: BracketData, n: number): BracketFixture | null {
-    for (const matches of Object.values(data)) {
-        const m = (matches as BracketFixture[]).find((f: BracketFixture) => f.match_number === n);
+    for (const arr of Object.values(data)) {
+        const m = (arr as BracketFixture[]).find(f => f.match_number === n);
         if (m) return m;
     }
     return null;
 }
 
-const SHORTS: Record<string, string> = {
-    'United States':'USA','Bosnia and Herzegovina':'Bosnia','Bosnia-Herzegovina':'Bosnia',
-    'Congo DR':'DR Congo','Cape Verde Islands':'Cape Verde','Saudi Arabia':'S.Arabia',
-    'South Africa':'S.Africa','South Korea':'S.Korea',
+const SH: Record<string, string> = {
+    'United States': 'USA', 'Bosnia and Herzegovina': 'Bosnia', 'Bosnia-Herzegovina': 'Bosnia',
+    'Congo DR': 'DR Congo', 'Cape Verde Islands': 'Cape Verde', 'Saudi Arabia': 'S. Arabia',
+    'South Africa': 'S. Africa', 'South Korea': 'S. Korea',
 };
-const FLAGS: Record<string, string> = {
-    'France':'🇫🇷','Morocco':'🇲🇦','Norway':'🇳🇴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Argentina':'🇦🇷',
-    'Switzerland':'🇨🇭','Spain':'🇪🇸','Belgium':'🇧🇪','Brazil':'🇧🇷','Mexico':'🇲🇽',
-    'Portugal':'🇵🇹','Netherlands':'🇳🇱','Germany':'🇩🇪','USA':'🇺🇸','United States':'🇺🇸',
-    'Canada':'🇨🇦','Japan':'🇯🇵','Croatia':'🇭🇷','South Africa':'🇿🇦','Australia':'🇦🇺',
-    'Paraguay':'🇵🇾','Sweden':'🇸🇪','Ivory Coast':'🇨🇮','Ecuador':'🇪🇨',
-    'DR Congo':'🇨🇩','Congo DR':'🇨🇩','Senegal':'🇸🇳','Egypt':'🇪🇬',
-    'Bosnia and Herzegovina':'🇧🇦','Bosnia-Herzegovina':'🇧🇦',
-    'Algeria':'🇩🇿','Colombia':'🇨🇴','Ghana':'🇬🇭','Cape Verde':'🇨🇻',
-    'Cape Verde Islands':'🇨🇻','Austria':'🇦🇹',
+const FL: Record<string, string> = {
+    'France': '🇫🇷', 'Morocco': '🇲🇦', 'Norway': '🇳🇴', 'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    'Argentina': '🇦🇷', 'Switzerland': '🇨🇭', 'Spain': '🇪🇸', 'Belgium': '🇧🇪',
+    'Brazil': '🇧🇷', 'Mexico': '🇲🇽', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱',
+    'Germany': '🇩🇪', 'USA': '🇺🇸', 'United States': '🇺🇸', 'Canada': '🇨🇦',
+    'Japan': '🇯🇵', 'Croatia': '🇭🇷', 'South Africa': '🇿🇦', 'Australia': '🇦🇺',
+    'Paraguay': '🇵🇾', 'Sweden': '🇸🇪', 'Ivory Coast': '🇨🇮', 'Ecuador': '🇪🇨',
+    'DR Congo': '🇨🇩', 'Congo DR': '🇨🇩', 'Senegal': '🇸🇳', 'Egypt': '🇪🇬',
+    'Bosnia and Herzegovina': '🇧🇦', 'Bosnia-Herzegovina': '🇧🇦',
+    'Algeria': '🇩🇿', 'Colombia': '🇨🇴', 'Ghana': '🇬🇭',
+    'Cape Verde': '🇨🇻', 'Cape Verde Islands': '🇨🇻', 'Austria': '🇦🇹',
 };
-const sh = (t: string) => SHORTS[t] || t;
-const fl = (t: string) => FLAGS[t] || '🏳️';
+const sh = (t: string) => SH[t] || t;
+const fl = (t: string) => FL[t] || '🏳️';
 
-// Card height layout
-const CH = 60; // total card height
+/* ─── layout constants ──────────────────────────────────────────── */
+const SLOT = 82;    // vertical space per R32 slot (card + gap)
+const CH   = 62;    // card height
+const CGAP = 38;    // horizontal gap between stage columns (for connector lines)
 
-function Card({ n, data, w = 120 }: { n: number; data: BracketData; w?: number }) {
+// Card widths per stage
+const W = { r32: 122, r16: 126, qf: 130, sf: 134, final: 152 };
+
+// Y center of each R32 slot (0-indexed across 8 slots per side)
+const r32cy = (i: number) => SLOT * i + CH / 2;
+
+// R16 center = midpoint of its two R32 cards
+const r16cy = (j: number) => (r32cy(j * 2) + r32cy(j * 2 + 1)) / 2;
+
+// QF center = midpoint of its two R16 cards
+const qfcy = (k: number) => (r16cy(k * 2) + r16cy(k * 2 + 1)) / 2;
+
+// SF center = midpoint of both QF cards
+const sfcy = (qfcy(0) + qfcy(1)) / 2;
+
+// Total bracket height
+const TOTAL_H = SLOT * 8 + (CH - SLOT); // = 8*82 + (62-82) = 656 - 20 = 636? No: last card top = SLOT*7, bottom = SLOT*7 + CH
+// Actually: totalH = r32[7].bottom = SLOT * 7 + CH
+const TOTAL_H_CALC = SLOT * 7 + CH;
+
+// X positions (absolute, left to right)
+const x = {
+    r32L:  0,
+    r16L:  W.r32 + CGAP,
+    qfL:   W.r32 + CGAP + W.r16 + CGAP,
+    sfL:   W.r32 + CGAP + W.r16 + CGAP + W.qf + CGAP,
+    final: W.r32 + CGAP + W.r16 + CGAP + W.qf + CGAP + W.sf + CGAP,
+    get sfR()    { return this.final + W.final + CGAP; },
+    get qfR()    { return this.sfR + W.sf + CGAP; },
+    get r16R()   { return this.qfR + W.qf + CGAP; },
+    get r32R()   { return this.r16R + W.r16 + CGAP; },
+};
+const TOTAL_W = x.r32R + W.r32;
+
+/* ─── card component ─────────────────────────────────────────────── */
+function Card({ n, data, w, style }: { n: number; data: BracketData; w: number; style?: React.CSSProperties }) {
     const f = get(data, n);
     const done = f?.status === 'completed';
     const live = f?.status === 'live';
     const pens = done && f!.penalty_home_score != null;
     const homeWon = done && f!.home_score != null && (pens ? f!.penalty_home_score! > f!.penalty_away_score! : f!.home_score! > f!.away_score!);
     const awayWon = done && !homeWon;
-    const LINE = 'rgba(255,255,255,0.06)';
+    const border = live ? 'rgba(34,197,94,0.6)' : done ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)';
+    const bg = live ? 'rgba(34,197,94,0.07)' : done ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
+
+    const teamRow = (team: string | undefined, score: number | null | undefined, penScore: number | null | undefined, won: boolean) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 6px', height: 24, background: won ? 'rgba(245,184,0,0.1)' : 'transparent' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: won ? 800 : 500, color: won ? '#f5b800' : team ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.18)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 34 }}>
+                {team ? <><span style={{ fontSize: 12, lineHeight: 1 }}>{fl(team)}</span>{sh(team)}</> : <span>—</span>}
+            </span>
+            {score != null && <span style={{ fontSize: 13, fontWeight: 900, color: won ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue",sans-serif', flexShrink: 0 }}>{score}{pens ? `(${penScore})` : ''}</span>}
+        </div>
+    );
+
     return (
-        <div style={{ width: w, height: CH, borderRadius: 8, border: `1px solid ${live ? 'rgba(34,197,94,0.5)' : done ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)'}`, background: live ? 'rgba(34,197,94,0.06)' : done ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)', overflow: 'hidden', flexShrink: 0 }}>
-            {/* Header */}
-            <div style={{ display:'flex', justifyContent:'space-between', padding:'2px 6px', background:'rgba(0,0,0,0.3)', borderBottom:`1px solid ${LINE}` }}>
-                <span style={{ fontSize:8, color:'rgba(255,255,255,0.3)', fontWeight:700 }}>M{n}</span>
-                {live && <span style={{ fontSize:8, color:'#4ade80', fontWeight:900 }}>● LIVE</span>}
-                {done && <span style={{ fontSize:8, color:'rgba(255,255,255,0.2)', fontWeight:700 }}>FT</span>}
+        <div style={{ position: 'absolute', width: w, height: CH, borderRadius: 8, border: `1px solid ${border}`, background: bg, overflow: 'hidden', ...style }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
+                <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>M{n}</span>
+                {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
+                {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
             </div>
-            {/* Home */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 6px', background: homeWon ? 'rgba(245,184,0,0.09)' : 'transparent', height:25, borderBottom:`1px solid ${LINE}` }}>
-                <span style={{ display:'flex', alignItems:'center', gap:3, fontSize:10, fontWeight: homeWon ? 800 : 500, color: homeWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', maxWidth: w-32 }}>
-                    {f ? <><span style={{ fontSize:12 }}>{fl(f.home_team)}</span>{sh(f.home_team)}</> : <span style={{ color:'rgba(255,255,255,0.15)' }}>—</span>}
-                </span>
-                {f?.home_score != null && <span style={{ fontSize:13, fontWeight:900, color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.4)', fontFamily:'"Bebas Neue",sans-serif', flexShrink:0 }}>{f.home_score}{pens ? `(${f.penalty_home_score})` : ''}</span>}
-            </div>
-            {/* Away */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 6px', background: awayWon ? 'rgba(245,184,0,0.09)' : 'transparent', height:25 }}>
-                <span style={{ display:'flex', alignItems:'center', gap:3, fontSize:10, fontWeight: awayWon ? 800 : 500, color: awayWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis', maxWidth: w-32 }}>
-                    {f ? <><span style={{ fontSize:12 }}>{fl(f.away_team)}</span>{sh(f.away_team)}</> : <span style={{ color:'rgba(255,255,255,0.15)' }}>—</span>}
-                </span>
-                {f?.away_score != null && <span style={{ fontSize:13, fontWeight:900, color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.4)', fontFamily:'"Bebas Neue",sans-serif', flexShrink:0 }}>{f.away_score}{pens ? `(${f.penalty_away_score})` : ''}</span>}
-            </div>
+            {teamRow(f?.home_team, f?.home_score, f?.penalty_home_score, homeWon)}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+            {teamRow(f?.away_team, f?.away_score, f?.penalty_away_score, awayWon)}
         </div>
     );
 }
 
-// Connector: the ⌐¬ shape connecting two input cards to one output
-// topH = space above center of top input card, botH = space below center of bottom input card
-// totalH = distance from center of top card to center of bottom card
-function Connector({ span, color = 'rgba(245,184,0,0.25)' }: { span: number; color?: string }) {
-    // span = distance between center of top card and center of bottom card
-    const half = span / 2;
-    return (
-        <div style={{ display:'flex', flexDirection:'column', flexShrink:0, width:12 }}>
-            {/* top arm: right edge + bottom border */}
-            <div style={{ height: half, borderRight:`1px solid ${color}`, borderBottom:`1px solid ${color}`, borderRadius:'0 0 3px 0' }} />
-            {/* bottom arm: right edge + top border */}
-            <div style={{ height: half, borderRight:`1px solid ${color}`, borderTop:`1px solid ${color}`, borderRadius:'0 3px 0 0' }} />
-        </div>
-    );
-}
+/* ─── SVG connector lines ────────────────────────────────────────── */
+function Lines() {
+    const LC = 'rgba(245,184,0,0.3)';
+    const lines: React.SVGProps<SVGLineElement>[] = [];
 
-// A horizontal line stub coming out of a card (left or right side)
-function Stub({ color = 'rgba(245,184,0,0.25)' }: { color?: string }) {
-    return <div style={{ width: 10, height: 1, background: color, flexShrink: 0, alignSelf: 'center' }} />;
-}
+    const line = (x1: number, y1: number, x2: number, y2: number) =>
+        lines.push({ x1, y1, x2, y2, stroke: LC, strokeWidth: 1 });
 
-function ColLabel({ label }: { label: string }) {
-    return <div style={{ fontSize:9, fontWeight:900, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(245,184,0,0.55)', textAlign:'center', marginBottom:8 }}>{label}</div>;
+    // Helper: draw the bracket connector for a pair of inputs → one output
+    const connector = (inX: number, topY: number, botY: number, outX: number) => {
+        const midX = (inX + outX) / 2;
+        const midY = (topY + botY) / 2;
+        line(inX,  topY, midX, topY);  // top horizontal arm
+        line(inX,  botY, midX, botY);  // bottom horizontal arm
+        line(midX, topY, midX, botY);  // vertical connector
+        line(midX, midY, outX, midY);  // output arm to next stage
+    };
+
+    // LEFT SIDE connectors
+    // R32 → R16 (4 pairs)
+    for (let j = 0; j < 4; j++) {
+        connector(x.r32L + W.r32, r32cy(j * 2), r32cy(j * 2 + 1), x.r16L);
+    }
+    // R16 → QF (2 pairs)
+    for (let k = 0; k < 2; k++) {
+        connector(x.r16L + W.r16, r16cy(k * 2), r16cy(k * 2 + 1), x.qfL);
+    }
+    // QF → SF
+    connector(x.qfL + W.qf, qfcy(0), qfcy(1), x.sfL);
+    // SF → Final
+    line(x.sfL + W.sf, sfcy, x.final, sfcy);
+
+    // RIGHT SIDE connectors (mirrored)
+    for (let j = 0; j < 4; j++) {
+        connector(x.sfR - (x.r32L + W.r32) + x.r32L, r32cy(j * 2), r32cy(j * 2 + 1), x.sfR);
+    }
+    // Actually just mirror:
+    const rConnector = (inX: number, topY: number, botY: number, outX: number) => {
+        const midX = (inX + outX) / 2;
+        const midY = (topY + botY) / 2;
+        line(inX,  topY, midX, topY);
+        line(inX,  botY, midX, botY);
+        line(midX, topY, midX, botY);
+        line(midX, midY, outX, midY);
+    };
+    for (let j = 0; j < 4; j++) {
+        rConnector(x.r32R, r32cy(j * 2), r32cy(j * 2 + 1), x.r32R + W.r32);
+    }
+
+    return null; // placeholder — will be done differently below
 }
 
 export function FullBracket({ data }: { data: BracketData }) {
-    const G = 8;    // gap between R32 pairs
-    const BP = 28;  // gap between arms in same QF group
-    const BG = 44;  // gap between QF groups
-
-    // Heights as measured from card CENTER to card CENTER
-    const pairSpan = CH + G;           // center-to-center of R32 pair
-    const armSpan = pairSpan * 2 + BP; // center-to-center of R16 pair (= 2 R32 pairs + between-pair gap)
-    const qfSpan = armSpan * 2 + BG;   // center-to-center of QF pair
-    const sfSpan = qfSpan * 2;          // approx center-to-center of SF (both QF groups)
-
-    // Total bracket height
-    const totalH = qfSpan * 2 + BG + CH;
-
-    // Pinch-to-zoom
-    const [zoom, setZoom] = useState(0.55);
+    const [zoom, setZoom] = useState(0.52);
     const lastDist = useRef<number | null>(null);
     const onTS = (e: React.TouchEvent) => { if (e.touches.length === 2) lastDist.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); };
     const onTM = (e: React.TouchEvent) => { if (e.touches.length === 2 && lastDist.current !== null) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZoom(z => Math.min(1.6, Math.max(0.3, z + (d - lastDist.current!) / 220))); lastDist.current = d; } };
     const onTE = () => { lastDist.current = null; };
 
-    // Build one side's columns
-    const renderSide = (arms: typeof LEFT_BRACKET, side: 'L' | 'R') => {
-        const isLeft = side === 'L';
+    const LC = 'rgba(245,184,0,0.28)';
 
-        // R32 column: 8 cards arranged in 4 pairs, 2 QF groups
-        const r32Col = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                {arms.map((arm, i) => (
-                    <React.Fragment key={arm.r16}>
-                        {i === 1 && <div style={{ height: BP }} />}
-                        {i === 2 && <div style={{ height: BG }} />}
-                        {i === 3 && <div style={{ height: BP }} />}
-                        <Card n={arm.r32[0]} data={data} />
-                        <div style={{ height: G }} />
-                        <Card n={arm.r32[1]} data={data} />
-                    </React.Fragment>
-                ))}
-            </div>
+    const conn = (inX: number, topY: number, botY: number, outX: number, key: string) => {
+        const midX = (inX + outX) / 2;
+        const midY = (topY + botY) / 2;
+        return (
+            <g key={key} stroke={LC} strokeWidth={1} fill="none">
+                <line x1={inX}  y1={topY} x2={midX} y2={topY} />
+                <line x1={inX}  y1={botY} x2={midX} y2={botY} />
+                <line x1={midX} y1={topY} x2={midX} y2={botY} />
+                <line x1={midX} y1={midY} x2={outX} y2={midY} />
+            </g>
         );
-
-        // R32→R16 connectors: one per arm
-        const r32r16Con = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                {arms.map((arm, i) => (
-                    <React.Fragment key={arm.r16}>
-                        {i === 1 && <div style={{ height: BP }} />}
-                        {i === 2 && <div style={{ height: BG }} />}
-                        {i === 3 && <div style={{ height: BP }} />}
-                        <div style={{ display:'flex', flexDirection:'column', justifyContent:'center' }}>
-                            <div style={{ height: CH / 2 }} />
-                            <Connector span={pairSpan} />
-                            <div style={{ height: CH / 2 }} />
-                        </div>
-                    </React.Fragment>
-                ))}
-            </div>
-        );
-
-        // R16 column
-        const r16Off = G + CH / 2; // offset so R16 card centers between the two R32 cards
-        const r16Col = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: r16Off }} />
-                {arms.map((arm, i) => (
-                    <React.Fragment key={arm.r16}>
-                        {i === 1 && <div style={{ height: BP + pairSpan - CH } /* space between arms */ } />}
-                        {i === 2 && <div style={{ height: BG + pairSpan - CH }} />}
-                        {i === 3 && <div style={{ height: BP + pairSpan - CH }} />}
-                        <Card n={arm.r16} data={data} />
-                    </React.Fragment>
-                ))}
-            </div>
-        );
-
-        // R16→QF connectors: one per QF (each spans two R16 cards)
-        const r16qfCon = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: r16Off + CH / 2 }} />
-                {[0, 2].map((gi, ci) => {
-                    const span = armSpan + BP;
-                    return (
-                        <React.Fragment key={gi}>
-                            {ci === 1 && <div style={{ height: BG + armSpan - CH }} />}
-                            <Connector span={span} />
-                        </React.Fragment>
-                    );
-                })}
-            </div>
-        );
-
-        // QF column
-        const qfOff = r16Off + CH / 2 + (armSpan + BP) / 2 - CH / 2;
-        const qfNums = [...new Set(arms.map(a => a.qf))];
-        const qfCol = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: qfOff }} />
-                {qfNums.map((n, i) => (
-                    <React.Fragment key={n}>
-                        {i > 0 && <div style={{ height: BG + (armSpan + BP) * 2 - CH }} />}
-                        <Card n={n} data={data} />
-                    </React.Fragment>
-                ))}
-            </div>
-        );
-
-        // QF→SF connector
-        const sfOff = qfOff + CH / 2;
-        const sfSpanLocal = BG + (armSpan + BP) * 2;
-        const qfsfCon = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: sfOff }} />
-                <Connector span={sfSpanLocal} />
-            </div>
-        );
-
-        // SF column
-        const sfCardOff = sfOff + sfSpanLocal / 2 - CH / 2;
-        const sfNum = isLeft ? 101 : 102;
-        const sfCol = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: sfCardOff }} />
-                <Card n={sfNum} data={data} w={128} />
-            </div>
-        );
-
-        // SF→Final stub
-        const sfStub = (
-            <div style={{ display:'flex', flexDirection:'column' }}>
-                <div style={{ height: sfCardOff + CH / 2 - 0.5 }} />
-                <Stub />
-            </div>
-        );
-
-        if (isLeft) return [r32Col, r32r16Con, r16Col, r16qfCon, qfCol, qfsfCon, sfCol, sfStub];
-        return [sfStub, sfCol, qfsfCon, qfCol, r16qfCon, r16Col, r32r16Con, r32Col];
     };
 
-    const leftParts = renderSide(LEFT_BRACKET, 'L');
-    const rightParts = renderSide(RIGHT_BRACKET, 'R');
+    const lineEl = (x1: number, y1: number, x2: number, y2: number, key: string) => (
+        <line key={key} x1={x1} y1={y1} x2={x2} y2={y2} stroke={LC} strokeWidth={1} />
+    );
 
-    // Final: vertically centered (use sfCardOff of left side)
-    const r16Off = G + CH / 2;
-    const qfOff = r16Off + CH / 2 + ((CH + G) * 2 + BP) / 2;
-    const sfSpanLocal = BG + ((CH + G) * 2 + BP) * 2;
-    const sfCardOff = qfOff + sfSpanLocal / 2;
-    const finalOff = sfCardOff - CH / 2;
+    const TH = TOTAL_H_CALC;
+    const TW = TOTAL_W;
+
+    const svgLines = (
+        <svg width={TW} height={TH} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+            {/* LEFT: R32 → R16 */}
+            {[0,1,2,3].map(j => conn(x.r32L + W.r32, r32cy(j*2), r32cy(j*2+1), x.r16L, `l32r16-${j}`))}
+            {/* LEFT: R16 → QF */}
+            {[0,1].map(k => conn(x.r16L + W.r16, r16cy(k*2), r16cy(k*2+1), x.qfL, `l16qf-${k}`))}
+            {/* LEFT: QF → SF */}
+            {conn(x.qfL + W.qf, qfcy(0), qfcy(1), x.sfL, 'lqfsf')}
+            {/* LEFT: SF → Final */}
+            {lineEl(x.sfL + W.sf, sfcy, x.final, sfcy, 'lsff')}
+            {/* RIGHT: R32 → R16 */}
+            {[0,1,2,3].map(j => conn(x.r32R, r32cy(j*2), r32cy(j*2+1), x.r32R + W.r32, `r32r16-${j}`))}
+            {/* RIGHT: R16 → QF */}
+            {[0,1].map(k => conn(x.r16R, r16cy(k*2), r16cy(k*2+1), x.r16R + W.r16, `r16qf-${k}`))}
+            {/* RIGHT: QF → SF */}
+            {conn(x.qfR, qfcy(0), qfcy(1), x.qfR + W.qf, 'rqfsf')}
+            {/* RIGHT: SF → Final */}
+            {lineEl(x.sfR, sfcy, x.final + W.final, sfcy, 'rsff')}
+        </svg>
+    );
+
+    // Stage label
+    const label = (lbl: string, xp: number, w: number) => (
+        <div key={lbl+xp} style={{ position: 'absolute', top: -22, left: xp, width: w, textAlign: 'center', fontSize: 9, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(245,184,0,0.55)' }}>
+            {lbl}
+        </div>
+    );
 
     return (
-        <div style={{ overflowX:'auto', paddingBottom:16, paddingTop:4, touchAction:'pan-x pan-y' }}
+        <div style={{ overflowX: 'auto', paddingBottom: 16, touchAction: 'pan-x pan-y' }}
             onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}>
-            <p style={{ fontSize:9, color:'rgba(255,255,255,0.18)', textAlign:'center', marginBottom:8 }}>Pinch to zoom · scroll sideways</p>
-            <div style={{ transform:`scale(${zoom})`, transformOrigin:'top left', display:'inline-flex', alignItems:'flex-start', gap:0, padding:'0 16px' }}>
-                {/* LEFT SIDE */}
-                {leftParts.map((col, i) => <div key={`l${i}`}>{col}</div>)}
+            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', textAlign: 'center', marginBottom: 10 }}>Pinch to zoom · scroll sideways</p>
+            <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', display: 'inline-block', paddingTop: 28 }}>
+                <div style={{ position: 'relative', width: TW, height: TH }}>
+                    {svgLines}
 
-                {/* CENTER: Final + 3rd place */}
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
-                    <div style={{ fontSize:10, fontWeight:900, letterSpacing:'0.14em', textTransform:'uppercase', color:'#f5b800', textShadow:'0 0 14px rgba(245,184,0,0.5)', textAlign:'center', marginBottom:8 }}>🏆 Final</div>
-                    <div style={{ height: finalOff - 20 }} />
-                    <Card n={104} data={data} w={148} />
-                    <div style={{ height:24 }} />
-                    <div style={{ fontSize:9, color:'rgba(255,255,255,0.28)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', textAlign:'center', marginBottom:6 }}>3rd Place</div>
-                    <Card n={103} data={data} w={148} />
+                    {/* Stage labels */}
+                    {label('R32', x.r32L, W.r32)}
+                    {label('R16', x.r16L, W.r16)}
+                    {label('QF', x.qfL, W.qf)}
+                    {label('SF', x.sfL, W.sf)}
+                    {label('🏆 Final', x.final, W.final)}
+                    {label('SF', x.sfR, W.sf)}
+                    {label('QF', x.qfR, W.qf)}
+                    {label('R16', x.r16R, W.r16)}
+                    {label('R32', x.r32R, W.r32)}
+
+                    {/* LEFT R32 cards */}
+                    {L.flatMap((arm, ai) => arm.r32.map((mn, ri) => (
+                        <Card key={`lr32-${mn}`} n={mn} data={data} w={W.r32}
+                            style={{ left: x.r32L, top: r32cy(ai * 2 + ri) - CH / 2 }} />
+                    )))}
+
+                    {/* LEFT R16 cards */}
+                    {L.map((arm, j) => (
+                        <Card key={`lr16-${arm.r16}`} n={arm.r16} data={data} w={W.r16}
+                            style={{ left: x.r16L, top: r16cy(j) - CH / 2 }} />
+                    ))}
+
+                    {/* LEFT QF cards */}
+                    {[57, 58].map((mn, k) => (
+                        <Card key={`lqf-${mn}`} n={mn} data={data} w={W.qf}
+                            style={{ left: x.qfL, top: qfcy(k) - CH / 2 }} />
+                    ))}
+
+                    {/* LEFT SF */}
+                    <Card n={101} data={data} w={W.sf} style={{ left: x.sfL, top: sfcy - CH / 2 }} />
+
+                    {/* FINAL */}
+                    <Card n={104} data={data} w={W.final} style={{ left: x.final, top: sfcy - CH / 2 }} />
+
+                    {/* 3RD PLACE label + card */}
+                    <div style={{ position: 'absolute', left: x.final, top: sfcy + CH / 2 + 18, width: W.final, textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.28)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        3rd Place
+                    </div>
+                    <Card n={103} data={data} w={W.final} style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
+
+                    {/* RIGHT SF */}
+                    <Card n={102} data={data} w={W.sf} style={{ left: x.sfR, top: sfcy - CH / 2 }} />
+
+                    {/* RIGHT QF cards */}
+                    {[59, 60].map((mn, k) => (
+                        <Card key={`rqf-${mn}`} n={mn} data={data} w={W.qf}
+                            style={{ left: x.qfR, top: qfcy(k) - CH / 2 }} />
+                    ))}
+
+                    {/* RIGHT R16 cards */}
+                    {R.map((arm, j) => (
+                        <Card key={`rr16-${arm.r16}`} n={arm.r16} data={data} w={W.r16}
+                            style={{ left: x.r16R, top: r16cy(j) - CH / 2 }} />
+                    ))}
+
+                    {/* RIGHT R32 cards */}
+                    {R.flatMap((arm, ai) => arm.r32.map((mn, ri) => (
+                        <Card key={`rr32-${mn}`} n={mn} data={data} w={W.r32}
+                            style={{ left: x.r32R, top: r32cy(ai * 2 + ri) - CH / 2 }} />
+                    )))}
                 </div>
-
-                {/* RIGHT SIDE */}
-                {rightParts.map((col, i) => <div key={`r${i}`}>{col}</div>)}
             </div>
         </div>
     );
