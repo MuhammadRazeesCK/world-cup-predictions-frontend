@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { statsApi, PlayerLeader, StatCategory, Group, BracketFixture, BracketData } from '../api/stats';
 import { DateTime } from 'luxon';
+import { useAuth } from '../context/AuthContext';
+import apiClient from '../api/client';
 
 function formatKickoff(iso: string) {
     return DateTime.fromISO(iso).setZone('Asia/Kolkata').toFormat('d MMM, h:mm a');
@@ -321,6 +323,19 @@ const NAV_TABS = [
 
 export default function StatsPage() {
     const [activeTab, setActiveTab] = useState('bracket');
+    const [flushing, setFlushing] = useState(false);
+    const { isAdmin } = useAuth();
+    const queryClient = useQueryClient();
+
+    const flushCache = async () => {
+        setFlushing(true);
+        try {
+            await apiClient.post('/stats/flush');
+            queryClient.invalidateQueries({ queryKey: ['tournament-stats'] });
+        } finally {
+            setFlushing(false);
+        }
+    };
 
     const { data, isLoading, error, dataUpdatedAt } = useQuery({
         queryKey: ['tournament-stats'],
@@ -357,6 +372,16 @@ export default function StatsPage() {
                     {dataUpdatedAt > 0 && (
                         <p className="text-[10px] text-white/20 mt-0.5">
                             Updated {new Date(dataUpdatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            {isAdmin && (
+                                <button
+                                    onClick={flushCache}
+                                    disabled={flushing}
+                                    className="ml-3 font-bold underline"
+                                    style={{ color: flushing ? 'rgba(245,184,0,0.3)' : 'rgba(245,184,0,0.6)' }}
+                                >
+                                    {flushing ? 'Refreshing…' : '↺ Refresh from ESPN'}
+                                </button>
+                            )}
                         </p>
                     )}
                 </div>
