@@ -220,12 +220,12 @@ export function FullBracket({ data }: { data: BracketData }) {
             {conn(x.qfL + W.qf, qfcy(0), qfcy(1), x.sfL, 'lqfsf')}
             {/* LEFT: SF → Final */}
             {lineEl(x.sfL + W.sf, sfcy, x.final, sfcy, 'lsff')}
-            {/* RIGHT: R32 → R16 */}
-            {[0,1,2,3].map(j => conn(x.r32R, r32cy(j*2), r32cy(j*2+1), x.r32R + W.r32, `r32r16-${j}`))}
+            {/* RIGHT: R32 → R16 (arms from R32 left edge, output to R16 right edge) */}
+            {[0,1,2,3].map(j => conn(x.r32R, r32cy(j*2), r32cy(j*2+1), x.r16R + W.r16, `r32r16-${j}`))}
             {/* RIGHT: R16 → QF */}
-            {[0,1].map(k => conn(x.r16R, r16cy(k*2), r16cy(k*2+1), x.r16R + W.r16, `r16qf-${k}`))}
+            {[0,1].map(k => conn(x.r16R, r16cy(k*2), r16cy(k*2+1), x.qfR + W.qf, `r16qf-${k}`))}
             {/* RIGHT: QF → SF */}
-            {conn(x.qfR, qfcy(0), qfcy(1), x.qfR + W.qf, 'rqfsf')}
+            {conn(x.qfR, qfcy(0), qfcy(1), x.sfR + W.sf, 'rqfsf')}
             {/* RIGHT: SF → Final */}
             {lineEl(x.sfR, sfcy, x.final + W.final, sfcy, 'rsff')}
         </svg>
