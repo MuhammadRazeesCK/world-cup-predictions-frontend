@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { BracketFixture, BracketData } from '../api/stats';
 
 /* ─── WC 2026 bracket match numbers ────────────────────────────── */
@@ -106,8 +106,7 @@ function Card({ n, data, w, style }: { n: number; data: BracketData; w: number; 
 
     return (
         <div style={{ position: 'absolute', width: w, height: CH, borderRadius: 8, border: `1px solid ${border}`, background: bg, overflow: 'hidden', ...style }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
-                <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>M{n}</span>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
                 {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
                 {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
             </div>
@@ -172,7 +171,19 @@ function Lines() {
 
 export function FullBracket({ data }: { data: BracketData }) {
     const [zoom, setZoom] = useState(0.52);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const lastDist = useRef<number | null>(null);
+
+    // On mount, scroll to show the Final (center of bracket)
+    useEffect(() => {
+        if (scrollRef.current) {
+            const el = scrollRef.current;
+            // Center of bracket in scaled coords
+            const scaledCenter = (x.final + W.final / 2) * zoom;
+            el.scrollLeft = scaledCenter - el.clientWidth / 2;
+        }
+    }, [zoom]);
+
     const onTS = (e: React.TouchEvent) => { if (e.touches.length === 2) lastDist.current = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); };
     const onTM = (e: React.TouchEvent) => { if (e.touches.length === 2 && lastDist.current !== null) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); setZoom(z => Math.min(1.6, Math.max(0.3, z + (d - lastDist.current!) / 220))); lastDist.current = d; } };
     const onTE = () => { lastDist.current = null; };
@@ -228,10 +239,12 @@ export function FullBracket({ data }: { data: BracketData }) {
     );
 
     return (
-        <div style={{ overflowX: 'auto', paddingBottom: 16, touchAction: 'pan-x pan-y' }}
+        <div ref={scrollRef} style={{ overflowX: 'auto', paddingBottom: 16, touchAction: 'pan-x pan-y' }}
             onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}>
             <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', textAlign: 'center', marginBottom: 10 }}>Pinch to zoom · scroll sideways</p>
-            <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', display: 'inline-block', paddingTop: 28 }}>
+            {/* Wrapper sized to scaled dimensions so scroll container works correctly */}
+            <div style={{ width: TW * zoom, height: (TH + 60) * zoom, position: 'relative' }}>
+                <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', position: 'absolute', top: 0, left: 0, paddingTop: 28 }}>
                 <div style={{ position: 'relative', width: TW, height: TH }}>
                     {svgLines}
 
@@ -296,6 +309,7 @@ export function FullBracket({ data }: { data: BracketData }) {
                         <Card key={`rr32-${mn}`} n={mn} data={data} w={W.r32}
                             style={{ left: x.r32R, top: r32cy(ai * 2 + ri) - CH / 2 }} />
                     )))}
+                </div>
                 </div>
             </div>
         </div>
