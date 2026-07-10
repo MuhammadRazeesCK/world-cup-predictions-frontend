@@ -1,295 +1,162 @@
+import React from 'react';
 import { BracketFixture, BracketData } from '../api/stats';
 
-/* ─── WC 2026 bracket topology ───────────────────────────────────
-   Each entry = { slot, r32a, r32b, r16, qf, sf, side }
-   side: 'L' = left half, 'R' = right half
-   Pairs of r32 → r16 → qf → sf on each side
-   ────────────────────────────────────────────────────────────── */
-
-// Each "arm" of the bracket: two R32 matches → one R16 → feeds QF
-const BRACKET_ARMS = [
-    // LEFT SIDE — top to bottom
-    { r32: [74, 77], r16: 89, qf: 97, sf: 101, side: 'L' as const, arm: 0 },
-    { r32: [73, 75], r16: 90, qf: 97, sf: 101, side: 'L' as const, arm: 1 },
-    { r32: [79, 80], r16: 92, qf: 98, sf: 101, side: 'L' as const, arm: 2 },
-    { r32: [83, 84], r16: 93, qf: 98, sf: 101, side: 'L' as const, arm: 3 },
-    // RIGHT SIDE — top to bottom
-    { r32: [76, 78], r16: 91, qf: 99, sf: 102, side: 'R' as const, arm: 0 },
-    { r32: [85, 86], r16: 95, qf: 99, sf: 102, side: 'R' as const, arm: 1 },
-    { r32: [81, 82], r16: 94, qf: 100, sf: 102, side: 'R' as const, arm: 2 },
-    { r32: [87, 88], r16: 96, qf: 100, sf: 102, side: 'R' as const, arm: 3 },
+/* WC 2026 actual match numbers from DB */
+const LEFT_BRACKET = [
+    { r32: [33, 36], r16: 49, qf: 57 },
+    { r32: [35, 38], r16: 50, qf: 57 },
+    { r32: [43, 44], r16: 53, qf: 58 },
+    { r32: [41, 42], r16: 54, qf: 58 },
+];
+const RIGHT_BRACKET = [
+    { r32: [34, 37], r16: 51, qf: 59 },
+    { r32: [39, 40], r16: 52, qf: 59 },
+    { r32: [45, 48], r16: 56, qf: 60 },
+    { r32: [47, 46], r16: 55, qf: 60 },
 ];
 
-function getMatch(data: BracketData, matchNumber: number): BracketFixture | null {
+function get(data: BracketData, n: number): BracketFixture | null {
     for (const matches of Object.values(data)) {
-        const m = (matches as BracketFixture[]).find((f: BracketFixture) => f.match_number === matchNumber);
+        const m = (matches as BracketFixture[]).find((f: BracketFixture) => f.match_number === n);
         if (m) return m;
     }
     return null;
 }
 
-function teamName(team: string) {
-    // Shorten long names
-    const SHORT: Record<string, string> = {
-        'United States': 'USA',
-        'Bosnia-Herzegovina': 'Bosnia',
-        'Congo DR': 'DR Congo',
-        'Cape Verde Islands': 'Cape Verde',
-        'Saudi Arabia': 'S. Arabia',
-        'South Africa': 'S. Africa',
-        'South Korea': 'S. Korea',
-        'New Zealand': 'NZ',
-        'Bosnia and Herzegovina': 'Bosnia',
-    };
-    return SHORT[team] || team;
-}
+const SHORTS: Record<string, string> = {
+    'United States': 'USA', 'Bosnia and Herzegovina': 'Bosnia',
+    'Bosnia-Herzegovina': 'Bosnia', 'DR Congo': 'DR Congo', 'Congo DR': 'DR Congo',
+    'Cape Verde Islands': 'Cape Verde', 'Saudi Arabia': 'S. Arabia',
+    'South Africa': 'S. Africa', 'South Korea': 'S. Korea',
+};
+const sh = (t: string) => SHORTS[t] || t;
 
-interface MatchSlotProps {
-    fixture: BracketFixture | null;
-    matchNumber: number;
-    compact?: boolean;
-}
-
-function MatchSlot({ fixture: f, matchNumber, compact }: MatchSlotProps) {
-    const isDone = f?.status === 'completed';
-    const isLive = f?.status === 'live';
-    const hasPens = isDone && f!.penalty_home_score != null;
-
-    const homeWon = isDone && f!.home_score != null && (hasPens
-        ? f!.penalty_home_score! > f!.penalty_away_score!
-        : f!.home_score! > f!.away_score!);
-    const awayWon = isDone && !homeWon;
-
-    const w = compact ? 108 : 130;
-    const h = compact ? 52 : 60;
-
-    if (!f) {
-        return (
-            <div style={{
-                width: w, height: h, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-            }}>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    M{matchNumber}
-                </div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.15)', marginTop: 2 }}>TBD</div>
-            </div>
-        );
-    }
-
+function Card({ n, data, w = 118 }: { n: number; data: BracketData; w?: number }) {
+    const f = get(data, n);
+    const done = f?.status === 'completed';
+    const live = f?.status === 'live';
+    const pens = done && f!.penalty_home_score != null;
+    const homeWon = done && f!.home_score != null && (pens ? f!.penalty_home_score! > f!.penalty_away_score! : f!.home_score! > f!.away_score!);
+    const awayWon = done && !homeWon;
     return (
-        <div style={{
-            width: w, height: h, borderRadius: 8,
-            border: isLive ? '1px solid rgba(22,163,74,0.5)' : '1px solid rgba(255,255,255,0.1)',
-            background: isDone ? 'rgba(255,255,255,0.04)' : isLive ? 'rgba(22,163,74,0.06)' : 'rgba(255,255,255,0.03)',
-            overflow: 'hidden',
-            flexShrink: 0,
-        }}>
-            {/* Match label */}
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '2px 6px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(0,0,0,0.2)',
-            }}>
-                <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', fontWeight: 700, letterSpacing: '0.08em' }}>
-                    M{f.match_number}
-                </span>
-                {isLive && <span style={{ fontSize: 7, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
-                {isDone && <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
+        <div style={{ width: w, borderRadius: 8, border: `1px solid ${live ? 'rgba(34,197,94,0.5)' : done ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)'}`, background: live ? 'rgba(34,197,94,0.05)' : done ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 6px', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>M{n}</span>
+                {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
+                {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
             </div>
-
             {/* Home */}
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '3px 6px',
-                background: homeWon ? 'rgba(245,184,0,0.06)' : 'transparent',
-            }}>
-                <span style={{
-                    fontSize: compact ? 9 : 10, fontWeight: homeWon ? 800 : 500,
-                    color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.8)',
-                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32,
-                }}>
-                    {teamName(f.home_team)}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: homeWon ? 'rgba(245,184,0,0.08)' : 'transparent', minHeight: 22 }}>
+                <span style={{ fontSize: 10, fontWeight: homeWon ? 800 : 500, color: homeWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32 }}>
+                    {f ? sh(f.home_team) : '—'}
                 </span>
-                {f.home_score != null && (
-                    <span style={{
-                        fontSize: 11, fontWeight: 900, color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.5)',
-                        fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0,
-                    }}>
-                        {f.home_score}{hasPens ? `(${f.penalty_home_score})` : ''}
-                    </span>
-                )}
+                {f?.home_score != null && <span style={{ fontSize: 12, fontWeight: 900, color: homeWon ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0, marginLeft: 4 }}>{f.home_score}{pens ? `(${f.penalty_home_score})` : ''}</span>}
             </div>
-
             {/* Away */}
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '3px 6px',
-                background: awayWon ? 'rgba(245,184,0,0.06)' : 'transparent',
-            }}>
-                <span style={{
-                    fontSize: compact ? 9 : 10, fontWeight: awayWon ? 800 : 500,
-                    color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.8)',
-                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32,
-                }}>
-                    {teamName(f.away_team)}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: awayWon ? 'rgba(245,184,0,0.08)' : 'transparent', minHeight: 22, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontSize: 10, fontWeight: awayWon ? 800 : 500, color: awayWon ? '#f5b800' : f ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: w - 32 }}>
+                    {f ? sh(f.away_team) : '—'}
                 </span>
-                {f.away_score != null && (
-                    <span style={{
-                        fontSize: 11, fontWeight: 900, color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.5)',
-                        fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0,
-                    }}>
-                        {f.away_score}{hasPens ? `(${f.penalty_away_score})` : ''}
-                    </span>
-                )}
+                {f?.away_score != null && <span style={{ fontSize: 12, fontWeight: 900, color: awayWon ? '#f5b800' : 'rgba(255,255,255,0.45)', fontFamily: '"Bebas Neue", sans-serif', flexShrink: 0, marginLeft: 4 }}>{f.away_score}{pens ? `(${f.penalty_away_score})` : ''}</span>}
             </div>
         </div>
     );
 }
 
-// A column of evenly-spaced slots
-function BracketColumn({ title, slots, gap }: { title: string; slots: React.ReactNode[]; gap: number }) {
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{
-                fontSize: 9, fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase',
-                color: 'rgba(245,184,0,0.6)', marginBottom: 10, textAlign: 'center',
-            }}>
-                {title}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap }}>
-                {slots}
-            </div>
-        </div>
-    );
+function ColHeader({ label }: { label: string }) {
+    return <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(245,184,0,0.55)', textAlign: 'center', marginBottom: 8 }}>{label}</div>;
 }
 
 export function FullBracket({ data }: { data: BracketData }) {
-    const get = (n: number) => getMatch(data, n);
+    const CH = 58; // card height (header + 2 rows)
+    const G = 8;   // gap between two R32 in a pair
+    const BP = 28; // gap between pairs in same QF group
+    const BG = 40; // gap between QF groups
+    const COL = 14;
 
-    // Finals / SF / 3rd
-    const final = get(104);
-    const sf1 = get(101);
-    const sf2 = get(102);
-    const thirdPlace = get(103);
+    // Heights
+    const pairH = CH * 2 + G;           // height of one R32 pair
+    const groupH = pairH * 2 + BP;      // height of a QF group (2 pairs)
+    const totalH = groupH * 2 + BG;     // total bracket height per side
 
-    // Left bracket arms (top 4)
-    const leftArms = BRACKET_ARMS.filter(a => a.side === 'L');
-    const rightArms = BRACKET_ARMS.filter(a => a.side === 'R');
+    const R32 = (arms: typeof LEFT_BRACKET) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {arms.map((arm, i) => (
+                <React.Fragment key={arm.r16}>
+                    {i === 2 && <div style={{ height: BG }} />}
+                    {i === 1 && <div style={{ height: BP }} />}
+                    {i === 3 && <div style={{ height: BP }} />}
+                    <Card n={arm.r32[0]} data={data} />
+                    <div style={{ height: G }} />
+                    <Card n={arm.r32[1]} data={data} />
+                </React.Fragment>
+            ))}
+        </div>
+    );
 
-    const COL_GAP = 16;
-    const SLOT_H = 60;
-    const COMPACT_H = 52;
+    const R16 = (arms: typeof LEFT_BRACKET) => {
+        const off = (pairH - CH) / 2;
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: off }} />
+                {arms.map((arm, i) => (
+                    <React.Fragment key={arm.r16}>
+                        {i === 1 && <div style={{ height: BP + pairH - CH }} />}
+                        {i === 2 && <div style={{ height: BG + pairH - CH }} />}
+                        {i === 3 && <div style={{ height: BP + pairH - CH }} />}
+                        <Card n={arm.r16} data={data} />
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+    };
 
-    // Vertical spacing: R32 → needs 8 slots each gap 8px, R16 → 4, QF → 2, SF → 1
-    const R32_GAP = 8;
-    const R16_GAP = SLOT_H + R32_GAP * 2 + R32_GAP; // centers between two R32 + gaps
-    const QF_GAP = (SLOT_H + R16_GAP) * 2 - SLOT_H;
-    const SF_GAP = (SLOT_H + QF_GAP) * 2 - SLOT_H;
+    const QF = (arms: typeof LEFT_BRACKET) => {
+        const qfOff = (groupH - CH) / 2;
+        const qfNums = [...new Set(arms.map(a => a.qf))];
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: qfOff }} />
+                {qfNums.map((n, i) => (
+                    <React.Fragment key={n}>
+                        {i > 0 && <div style={{ height: BG + groupH - CH }} />}
+                        <Card n={n} data={data} />
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+    };
+
+    const sfOff = (totalH - CH) / 2;
+
+    const SF = (n: number) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: sfOff }} />
+            <Card n={n} data={data} w={128} />
+        </div>
+    );
 
     return (
-        <div style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: 16 }}>
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: COL_GAP,
-                padding: '0 8px', minWidth: 'max-content',
-            }}>
+        <div style={{ overflowX: 'auto', paddingBottom: 16, paddingTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: COL, padding: '0 8px', minWidth: 'max-content' }}>
 
-                {/* ── LEFT: R32 ─────────── */}
-                <BracketColumn
-                    title="R32"
-                    gap={R32_GAP}
-                    slots={leftArms.flatMap(arm =>
-                        arm.r32.map(mn => (
-                            <div key={mn} style={{ marginBottom: arm.arm < leftArms.length - 1 && arm.r32[1] === mn ? R16_GAP - SLOT_H - R32_GAP : 0 }}>
-                                <MatchSlot fixture={get(mn)} matchNumber={mn} compact />
-                            </div>
-                        ))
-                    )}
-                />
+                <div><ColHeader label="R32" />{R32(LEFT_BRACKET)}</div>
+                <div><ColHeader label="R16" />{R16(LEFT_BRACKET)}</div>
+                <div><ColHeader label="QF" />{QF(LEFT_BRACKET)}</div>
+                <div><ColHeader label="SF" />{SF(101)}</div>
 
-                {/* ── LEFT: R16 ─────────── */}
-                <BracketColumn
-                    title="R16"
-                    gap={R16_GAP}
-                    slots={leftArms.map(arm => (
-                        <div key={arm.r16} style={{ marginBottom: arm.arm < leftArms.length - 1 ? QF_GAP / 2 - SLOT_H : 0 }}>
-                            <MatchSlot fixture={get(arm.r16)} matchNumber={arm.r16} />
-                        </div>
-                    ))}
-                />
-
-                {/* ── LEFT: QF ──────────── */}
-                <BracketColumn
-                    title="QF"
-                    gap={QF_GAP}
-                    slots={[...new Set(leftArms.map(a => a.qf))].map(mn => (
-                        <MatchSlot key={mn} fixture={get(mn)} matchNumber={mn} />
-                    ))}
-                />
-
-                {/* ── LEFT: SF ──────────── */}
-                <BracketColumn
-                    title="SF"
-                    gap={0}
-                    slots={[<MatchSlot key={101} fixture={sf1} matchNumber={101} />]}
-                />
-
-                {/* ── CENTER: Final + 3rd ── */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-                    <div style={{
-                        fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase',
-                        color: '#f5b800', textAlign: 'center', marginBottom: 4,
-                        textShadow: '0 0 16px rgba(245,184,0,0.5)',
-                    }}>
-                        🏆 Final
-                    </div>
-                    <MatchSlot fixture={final} matchNumber={104} />
-                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 8 }}>
-                        3rd Place
-                    </div>
-                    <MatchSlot fixture={thirdPlace} matchNumber={103} />
+                {/* CENTER */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#f5b800', textShadow: '0 0 12px rgba(245,184,0,0.4)', textAlign: 'center' }}>🏆 Final</div>
+                    <div style={{ marginTop: sfOff - 28 }}><Card n={104} data={data} w={144} /></div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 16, textAlign: 'center' }}>3rd Place</div>
+                    <Card n={103} data={data} w={144} />
                 </div>
 
-                {/* ── RIGHT: SF ─────────── */}
-                <BracketColumn
-                    title="SF"
-                    gap={0}
-                    slots={[<MatchSlot key={102} fixture={sf2} matchNumber={102} />]}
-                />
-
-                {/* ── RIGHT: QF ─────────── */}
-                <BracketColumn
-                    title="QF"
-                    gap={QF_GAP}
-                    slots={[...new Set(rightArms.map(a => a.qf))].map(mn => (
-                        <MatchSlot key={mn} fixture={get(mn)} matchNumber={mn} />
-                    ))}
-                />
-
-                {/* ── RIGHT: R16 ─────────── */}
-                <BracketColumn
-                    title="R16"
-                    gap={R16_GAP}
-                    slots={rightArms.map(arm => (
-                        <div key={arm.r16} style={{ marginBottom: arm.arm < rightArms.length - 1 ? QF_GAP / 2 - SLOT_H : 0 }}>
-                            <MatchSlot fixture={get(arm.r16)} matchNumber={arm.r16} />
-                        </div>
-                    ))}
-                />
-
-                {/* ── RIGHT: R32 ─────────── */}
-                <BracketColumn
-                    title="R32"
-                    gap={R32_GAP}
-                    slots={rightArms.flatMap(arm =>
-                        arm.r32.map(mn => (
-                            <div key={mn} style={{ marginBottom: arm.arm < rightArms.length - 1 && arm.r32[1] === mn ? R16_GAP - SLOT_H - R32_GAP : 0 }}>
-                                <MatchSlot fixture={get(mn)} matchNumber={mn} compact />
-                            </div>
-                        ))
-                    )}
-                />
+                <div><ColHeader label="SF" />{SF(102)}</div>
+                <div><ColHeader label="QF" />{QF(RIGHT_BRACKET)}</div>
+                <div><ColHeader label="R16" />{R16(RIGHT_BRACKET)}</div>
+                <div><ColHeader label="R32" />{R32(RIGHT_BRACKET)}</div>
             </div>
         </div>
     );
