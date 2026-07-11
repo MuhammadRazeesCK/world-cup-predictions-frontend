@@ -238,6 +238,17 @@ export function FullBracket({ data }: { data: BracketData }) {
     const TH = TOTAL_H_CALC;
     const TW = TOTAL_W;
 
+    // Dynamically find SF/Final/3rd by stage (don't hardcode match numbers)
+    const allFixtures = Object.values(data).flat() as BracketFixture[];
+    const byStage = (stage: string) => allFixtures.filter(f => f.stage === stage).sort((a, b) => a.match_number - b.match_number);
+    const sfs = byStage('sf');
+    const finals = byStage('final');
+    const thirds = byStage('third_place');
+    const sfLNum = sfs[0]?.match_number ?? 101;
+    const sfRNum = sfs[1]?.match_number ?? 102;
+    const finalNum = finals[0]?.match_number ?? 104;
+    const thirdNum = thirds[0]?.match_number ?? 103;
+
     const svgLines = (
         <svg width={TW} height={TH} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
             {/* LEFT: R32 → R16 */}
@@ -306,25 +317,25 @@ export function FullBracket({ data }: { data: BracketData }) {
                     ))}
 
                     {/* LEFT SF */}
-                    <Card n={101} data={data} w={W.sf}
+                    <Card n={sfLNum} data={data} w={W.sf}
                         projHome={projected(data, 57)}
                         projAway={projected(data, 58)}
                         style={{ left: x.sfL, top: sfcy - CH / 2 }} />
 
                     {/* FINAL */}
-                    <Card n={104} data={data} w={W.final}
-                        projHome={projected(data, 101)}
-                        projAway={projected(data, 102)}
+                    <Card n={finalNum} data={data} w={W.final}
+                        projHome={projected(data, sfLNum)}
+                        projAway={projected(data, sfRNum)}
                         style={{ left: x.final, top: sfcy - CH / 2 }} />
 
                     {/* 3RD PLACE label + card */}
                     <div style={{ position: 'absolute', left: x.final, top: sfcy + CH / 2 + 18, width: W.final, textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.28)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         3rd Place
                     </div>
-                    <Card n={103} data={data} w={W.final} style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
+                    <Card n={thirdNum} data={data} w={W.final} style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
 
                     {/* RIGHT SF */}
-                    <Card n={102} data={data} w={W.sf}
+                    <Card n={sfRNum} data={data} w={W.sf}
                         projHome={projected(data, 59)}
                         projAway={projected(data, 60)}
                         style={{ left: x.sfR, top: sfcy - CH / 2 }} />
