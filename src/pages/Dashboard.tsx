@@ -10,6 +10,7 @@ import { useUserStats, useLeaderboard } from '../hooks/useLeaderboard';
 import { useAuth } from '../context/AuthContext';
 import { announcementsApi } from '../api/announcements';
 import { pollsApi } from '../api/polls';
+import { RankCelebration } from '../components/RankCelebration';
 
 function SpinnerIcon() {
   return (
@@ -164,6 +165,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-20 sm:pb-8" style={{ background: '#0a0a0a' }}>
       <Header />
+      {user && stats && (
+        <RankCelebration
+          userId={user.id ?? user.username}
+          currentRank={stats.rank}
+          currentPoints={stats.total_points}
+        />
+      )}
       <main className="max-w-2xl mx-auto px-4 py-5 space-y-6">
 
         {/* Welcome strip */}
