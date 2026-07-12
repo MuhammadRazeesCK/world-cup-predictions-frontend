@@ -1,188 +1,183 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
-interface RankSnapshot {
-    rank: number;
-    points: number;
-}
+interface RankSnapshot { rank: number; points: number; }
 
-function getKey(userId: string) {
-    return `knockout_rank_snapshot_${userId}`;
-}
+function getKey(userId: string) { return `knockout_rank_snapshot_${userId}`; }
 
 function loadSnapshot(userId: string): RankSnapshot | null {
-    try {
-        const raw = localStorage.getItem(getKey(userId));
-        return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+    try { const r = localStorage.getItem(getKey(userId)); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function saveSnapshot(userId: string, s: RankSnapshot) {
+    try { localStorage.setItem(getKey(userId), JSON.stringify(s)); } catch {}
 }
 
-function saveSnapshot(userId: string, snap: RankSnapshot) {
-    try { localStorage.setItem(getKey(userId), JSON.stringify(snap)); } catch {}
+interface Props { userId: string; currentRank: number | null | undefined; currentPoints: number | undefined; }
+
+/* ─── confetti ────────────────────────────────────────────────── */
+function Confetti() {
+    const ref = useRef<HTMLCanvasElement>(null);
+    useEffect(() => {
+        const c = ref.current; if (!c) return;
+        const ctx = c.getContext('2d')!;
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const COLS = ['#f5b800','#fff','#4ade80','#f87171','#60a5fa','#fb923c'];
+        const ps = Array.from({ length: 100 }, () => ({
+            x: Math.random() * c.width, y: -20 - Math.random() * 200,
+            r: 4 + Math.random() * 6, col: COLS[Math.floor(Math.random() * 6)],
+            vx: (Math.random() - 0.5) * 5, vy: 3 + Math.random() * 5,
+            rot: Math.random() * Math.PI * 2, vrot: (Math.random() - 0.5) * 0.25, op: 1,
+        }));
+        let raf: number;
+        const tick = () => {
+            ctx.clearRect(0, 0, c.width, c.height);
+            let alive = false;
+            ps.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.vy += 0.1; p.op -= 0.006;
+                if (p.y < c.height && p.op > 0) alive = true;
+                ctx.save(); ctx.globalAlpha = Math.max(0, p.op); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+                ctx.fillStyle = p.col; ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r); ctx.restore();
+            });
+            if (alive) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+    return <canvas ref={ref} style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:59 }} />;
 }
 
-interface Props {
-    userId: string;
-    currentRank: number | null | undefined;
-    currentPoints: number | undefined;
-}
-
+/* ─── main ────────────────────────────────────────────────────── */
 export function RankCelebration({ userId, currentRank, currentPoints }: Props) {
-    const [celebration, setCelebration] = useState<null | {
-        type: 'gold' | 'podium' | 'climb' | 'points';
-        rank: number;
-        delta: number;
-        pointsDelta: number;
-    }>(null);
-    const [visible, setVisible] = useState(false);
+    const [cel, setCel] = useState<null | { type: 'gold'|'podium'|'climb'|'points'; rank:number; delta:number; pts:number }>(null);
+    const [vis, setVis] = useState(false);
+    const done = useRef(false);
 
     useEffect(() => {
-        if (!currentRank || !currentPoints || !userId) return;
-
+        if (!currentRank || !currentPoints || !userId || done.current) return;
+        done.current = true;
         const prev = loadSnapshot(userId);
-
-        // First time — just save, no celebration
-        if (!prev) {
-            saveSnapshot(userId, { rank: currentRank, points: currentPoints });
-            return;
-        }
-
-        const rankDelta = prev.rank - currentRank; // positive = improved
-        const pointsDelta = currentPoints - prev.points;
-
-        // Only celebrate if rank improved
-        if (rankDelta <= 0 && pointsDelta <= 0) return;
-
-        // Determine celebration type
-        let type: 'gold' | 'podium' | 'climb' | 'points' = 'points';
+        if (!prev) { saveSnapshot(userId, { rank: currentRank, points: currentPoints }); return; }
+        const d = prev.rank - currentRank;
+        const p = currentPoints - prev.points;
+        if (d <= 0 && p <= 0) return;
+        saveSnapshot(userId, { rank: currentRank, points: currentPoints });
+        let type: 'gold'|'podium'|'climb'|'points' = 'points';
         if (currentRank === 1) type = 'gold';
         else if (currentRank <= 3) type = 'podium';
-        else if (rankDelta >= 3) type = 'climb';
-        else if (pointsDelta > 0) type = 'points';
-
-        setCelebration({ type, rank: currentRank, delta: rankDelta, pointsDelta });
-        setVisible(true);
-
-        // Save new snapshot immediately
-        saveSnapshot(userId, { rank: currentRank, points: currentPoints });
+        else if (d >= 2) type = 'climb';
+        setCel({ type, rank: currentRank, delta: d, pts: p });
+        setVis(true);
     }, [userId, currentRank, currentPoints]);
 
-    const dismiss = () => setVisible(false);
+    const dismiss = () => setVis(false);
+    if (!cel || !vis) return null;
+    const { type, rank, delta, pts } = cel;
 
-    if (!celebration || !visible) return null;
+    /* shared overlay backdrop */
+    const Backdrop = ({ children }: { children: React.ReactNode }) => (
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+            onClick={dismiss}
+        >
+            <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 400, margin: '0 16px 24px' }}>
+                {children}
+            </div>
+        </div>
+    );
 
-    const { type, rank, delta, pointsDelta } = celebration;
+    /* ── #1 GOLD BURST ──────────────────────────────────────────── */
+    if (type === 'gold') return (
+        <>
+            <Confetti />
+            <Backdrop>
+                <div className="rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(160deg, #1a1400, #0d0d0d)', border: '1px solid rgba(245,184,0,0.5)', boxShadow: '0 0 80px rgba(245,184,0,0.25)' }}>
+                    {/* Gold glow bar */}
+                    <div style={{ height: 4, background: 'linear-gradient(90deg,#f5b800,#ff8c00,#f5b800)' }} />
+                    <div className="p-8 text-center space-y-4">
+                        <div style={{ fontSize: '4.5rem', lineHeight: 1, filter: 'drop-shadow(0 0 24px rgba(245,184,0,0.6))' }}>👑</div>
+                        <div>
+                            <p className="text-[11px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: 'rgba(245,184,0,0.6)' }}>You are now</p>
+                            <h1 className="font-black" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '5rem', lineHeight: 0.9, color: '#f5b800', textShadow: '0 0 40px rgba(245,184,0,0.5)' }}>
+                                #1
+                            </h1>
+                            <p className="text-white font-bold text-lg mt-1">in the Knockout Standings</p>
+                        </div>
+                        {pts > 0 && (
+                            <div className="rounded-2xl py-3 px-6 inline-block" style={{ background: 'rgba(245,184,0,0.12)', border: '1px solid rgba(245,184,0,0.2)' }}>
+                                <span className="font-black text-2xl" style={{ color: '#f5b800', fontFamily: '"Bebas Neue", sans-serif' }}>+{pts} PTS</span>
+                                <span className="text-white/40 text-sm ml-2">this round</span>
+                            </div>
+                        )}
+                        <button onClick={dismiss} className="w-full py-4 rounded-2xl font-black text-base uppercase tracking-widest mt-2" style={{ background: 'linear-gradient(135deg,#f5b800,#ff8c00)', color: '#000' }}>
+                            Let's Go! 🔥
+                        </button>
+                    </div>
+                </div>
+            </Backdrop>
+        </>
+    );
 
-    /* ── Full-screen gold burst for #1 ─────────────────────────── */
-    if (type === 'gold') {
+    /* ── TOP 3 PODIUM ───────────────────────────────────────────── */
+    if (type === 'podium') {
+        const medal = rank === 2 ? '🥈' : '🥉';
+        const accentColor = rank === 2 ? '#c0c0c0' : '#cd7f32';
         return (
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
-                onClick={dismiss}
-            >
-                <div
-                    className="rounded-3xl px-8 py-10 text-center mx-4 max-w-sm w-full"
-                    style={{ background: 'linear-gradient(135deg, rgba(245,184,0,0.15), rgba(255,140,0,0.08))', border: '1px solid rgba(245,184,0,0.4)', boxShadow: '0 0 60px rgba(245,184,0,0.2)' }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className="text-6xl mb-4 animate-bounce">👑</div>
-                    <h1 className="font-black text-white mb-2" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2.4rem', letterSpacing: '0.06em', color: '#f5b800' }}>
-                        You're #1!
-                    </h1>
-                    <p className="text-white/60 text-sm mb-2">Leading the predictions league</p>
-                    {pointsDelta > 0 && (
-                        <p className="font-black text-2xl mb-6" style={{ color: '#f5b800', fontFamily: '"Bebas Neue", sans-serif' }}>
-                            +{pointsDelta} pts this round
-                        </p>
+            <Backdrop>
+                <div className="rounded-3xl overflow-hidden" style={{ background: '#0d0d0d', border: `1px solid ${accentColor}55`, boxShadow: `0 0 60px ${accentColor}22` }}>
+                    <div style={{ height: 3, background: `linear-gradient(90deg,${accentColor},${accentColor}88,${accentColor})` }} />
+                    <div className="p-8 text-center space-y-4">
+                        <div style={{ fontSize: '4rem', lineHeight: 1 }}>{medal}</div>
+                        <div>
+                            <p className="text-[11px] font-black uppercase tracking-[0.3em] mb-2" style={{ color: `${accentColor}99` }}>You're on the podium</p>
+                            <h1 className="font-black" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '4.5rem', lineHeight: 0.9, color: accentColor }}>
+                                #{rank}
+                            </h1>
+                            <p className="text-white/60 text-sm mt-1">Knockout Standings</p>
+                        </div>
+                        {delta > 0 && (
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="text-green-400 font-black text-lg">↑ {delta} position{delta !== 1 ? 's' : ''}</span>
+                                {pts > 0 && <span className="text-white/30">·</span>}
+                                {pts > 0 && <span className="font-bold" style={{ color: '#f5b800' }}>+{pts} pts</span>}
+                            </div>
+                        )}
+                        <button onClick={dismiss} className="w-full py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest" style={{ background: `${accentColor}22`, border: `1px solid ${accentColor}44`, color: accentColor }}>
+                            Keep it up 💪
+                        </button>
+                    </div>
+                </div>
+            </Backdrop>
+        );
+    }
+
+    /* ── RANK CLIMB ─────────────────────────────────────────────── */
+    return (
+        <Backdrop>
+            <div className="rounded-3xl overflow-hidden" style={{ background: '#0d0d0d', border: '1px solid rgba(34,197,94,0.35)', boxShadow: '0 0 50px rgba(34,197,94,0.1)' }}>
+                <div style={{ height: 3, background: 'linear-gradient(90deg,#4ade80,#22c55e,#4ade80)' }} />
+                <div className="p-7 text-center space-y-4">
+                    <div style={{ fontSize: '3.5rem', lineHeight: 1 }}>🚀</div>
+                    <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: 'rgba(74,222,128,0.6)' }}>Rank up!</p>
+                        <h1 className="font-black" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '4.5rem', lineHeight: 0.9, color: '#4ade80' }}>
+                            #{rank}
+                        </h1>
+                        {delta > 0 && (
+                            <p className="text-white font-bold text-base mt-1">
+                                Climbed <span style={{ color: '#4ade80' }}>{delta} position{delta !== 1 ? 's' : ''}</span> in Knockout
+                            </p>
+                        )}
+                    </div>
+                    {pts > 0 && (
+                        <div className="rounded-2xl py-2.5 px-5 inline-block" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+                            <span className="font-black text-xl" style={{ color: '#4ade80', fontFamily: '"Bebas Neue", sans-serif' }}>+{pts} PTS</span>
+                        </div>
                     )}
-                    <button
-                        onClick={dismiss}
-                        className="w-full py-3 rounded-xl font-black text-sm uppercase tracking-widest"
-                        style={{ background: 'linear-gradient(135deg, #f5b800, #ff8c00)', color: '#000' }}
-                    >
+                    <button onClick={dismiss} className="w-full py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest" style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80' }}>
                         Let's Go! 🔥
                     </button>
                 </div>
             </div>
-        );
-    }
-
-    /* ── Podium (top 3) ─────────────────────────────────────────── */
-    if (type === 'podium') {
-        const emoji = rank === 2 ? '🥈' : '🥉';
-        const label = rank === 2 ? 'Silver Position!' : 'Bronze Position!';
-        return (
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)' }}
-                onClick={dismiss}
-            >
-                <div
-                    className="rounded-3xl px-8 py-10 text-center mx-4 max-w-sm w-full"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)' }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className="text-5xl mb-4">{emoji}</div>
-                    <h1 className="font-black text-white mb-1" style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '2rem', letterSpacing: '0.06em' }}>
-                        #{rank} — {label}
-                    </h1>
-                    {delta > 0 && (
-                        <p className="text-sm mb-1" style={{ color: '#4ade80' }}>↑ Climbed {delta} position{delta !== 1 ? 's' : ''}!</p>
-                    )}
-                    {pointsDelta > 0 && (
-                        <p className="font-black text-xl mb-6" style={{ color: '#f5b800', fontFamily: '"Bebas Neue", sans-serif' }}>+{pointsDelta} pts</p>
-                    )}
-                    <button onClick={dismiss} className="w-full py-3 rounded-xl font-black text-sm uppercase tracking-widest" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}>
-                        Nice! 💪
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    /* ── Climb banner (3+ spots up) ─────────────────────────────── */
-    if (type === 'climb') {
-        return (
-            <div
-                className="fixed top-0 left-0 right-0 z-50 px-4 pt-safe"
-                style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
-            >
-                <div
-                    className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-2xl"
-                    style={{ background: 'linear-gradient(135deg, #111 0%, rgba(34,197,94,0.12) 100%)', border: '1px solid rgba(34,197,94,0.3)', animation: 'slideDown 0.4s ease' }}
-                >
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl">🔥</span>
-                        <div>
-                            <p className="font-black text-white text-sm">You climbed {delta} positions!</p>
-                            <p className="text-xs" style={{ color: '#4ade80' }}>Now at #{rank}{pointsDelta > 0 ? ` · +${pointsDelta} pts` : ''}</p>
-                        </div>
-                    </div>
-                    <button onClick={dismiss} className="text-white/30 hover:text-white/60 text-lg ml-3">✕</button>
-                </div>
-            </div>
-        );
-    }
-
-    /* ── Points gained banner ───────────────────────────────────── */
-    return (
-        <div
-            className="fixed top-0 left-0 right-0 z-50 px-4"
-            style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
-        >
-            <div
-                className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-2xl"
-                style={{ background: 'rgba(245,184,0,0.09)', border: '1px solid rgba(245,184,0,0.25)', animation: 'slideDown 0.4s ease' }}
-            >
-                <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚡</span>
-                    <div>
-                        <p className="font-black text-white text-sm">+{pointsDelta} points earned!</p>
-                        <p className="text-xs text-white/40">You're now at #{rank}</p>
-                    </div>
-                </div>
-                <button onClick={dismiss} className="text-white/30 hover:text-white/60 text-lg ml-3">✕</button>
-            </div>
-        </div>
+        </Backdrop>
     );
 }
