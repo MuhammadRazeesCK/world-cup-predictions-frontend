@@ -98,47 +98,24 @@ export function RankCelebration({ userId, currentRank, currentPoints }: Props) {
                     <div className="px-7 pb-8 pt-4 space-y-6 relative">
 
                         {/* Rank change display */}
-                        <div className="flex items-center justify-center gap-5">
-                            {/* Previous rank */}
-                            <div className="text-center opacity-40">
-                                <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-white/50">Was</p>
-                                <p className="font-black tabular-nums" style={{ fontFamily:'"Bebas Neue",sans-serif', fontSize:'3rem', lineHeight:1, color:'rgba(255,255,255,0.3)' }}>
-                                    #{prevRank}
+                        <div className="text-center space-y-1">
+                            <p
+                                className="font-black tabular-nums"
+                                style={{
+                                    fontFamily:'"Bebas Neue",sans-serif',
+                                    fontSize: isTop1 ? '6rem' : '5.5rem',
+                                    lineHeight: 1,
+                                    color: isTop1 ? '#f5b800' : isTop3 ? '#e8e8e8' : '#fff',
+                                    textShadow: isTop1 ? '0 0 40px rgba(245,184,0,0.6)' : 'none',
+                                }}
+                            >
+                                #{currentRank}
+                            </p>
+                            {delta > 0 && (
+                                <p className="text-sm font-bold" style={{ color: 'rgba(245,184,0,0.7)' }}>
+                                    ↑ Climbed {delta} position{delta !== 1 ? 's' : ''}
                                 </p>
-                            </div>
-
-                            {/* Arrow */}
-                            <div className="flex flex-col items-center">
-                                <svg width="40" height="40" viewBox="0 0 40 40">
-                                    <defs>
-                                        <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%" stopColor="#f5b800" />
-                                            <stop offset="100%" stopColor="#ff8c00" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M8 20 L28 20 M22 12 L30 20 L22 28" stroke="url(#arrowGrad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                                </svg>
-                                {delta > 0 && (
-                                    <span className="text-[10px] font-black" style={{ color:'#f5b800' }}>+{delta}</span>
-                                )}
-                            </div>
-
-                            {/* New rank — hero number */}
-                            <div className="text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color:'rgba(245,184,0,0.6)' }}>Now</p>
-                                <p
-                                    className="font-black tabular-nums"
-                                    style={{
-                                        fontFamily:'"Bebas Neue",sans-serif',
-                                        fontSize: isTop1 ? '4.5rem' : '4rem',
-                                        lineHeight: 1,
-                                        color: isTop1 ? '#f5b800' : isTop3 ? '#e8e8e8' : '#fff',
-                                        textShadow: isTop1 ? '0 0 40px rgba(245,184,0,0.6)' : 'none',
-                                    }}
-                                >
-                                    #{currentRank}
-                                </p>
-                            </div>
+                            )}
                         </div>
 
                         {/* Headline */}
