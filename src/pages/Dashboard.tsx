@@ -105,6 +105,10 @@ export default function Dashboard() {
   const { data: available, isLoading, error } = useAvailableFixtures();
   const { data: stats } = useUserStats();
   const { data: leaderboard } = useLeaderboard({ limit: 5 });
+  // Knockout leaderboard — to find user's knockout-specific rank for celebration
+  const { data: knockoutBoard } = useLeaderboard({ limit: 200, stage_group: 'knockout' });
+  const knockoutRank = knockoutBoard?.leaderboard?.find((e: any) => e.username === user?.username)?.rank ?? null;
+  const knockoutPts = knockoutBoard?.leaderboard?.find((e: any) => e.username === user?.username)?.total_points ?? 0;
   const [viewingUser, setViewingUser] = useState<string | null>(null);
 
   // Live polls — shared query key with Header for zero extra requests
@@ -165,11 +169,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-20 sm:pb-8" style={{ background: '#0a0a0a' }}>
       <Header />
-      {user && stats && (
+      {user && knockoutRank && (
         <RankCelebration
           userId={user.id ?? user.username}
-          currentRank={stats.rank}
-          currentPoints={stats.total_points}
+          currentRank={knockoutRank}
+          currentPoints={knockoutPts}
         />
       )}
       <main className="max-w-2xl mx-auto px-4 py-5 space-y-6">

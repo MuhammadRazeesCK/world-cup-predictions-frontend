@@ -6,7 +6,7 @@ interface RankSnapshot {
 }
 
 function getKey(userId: string) {
-    return `rank_snapshot_${userId}`;
+    return `knockout_rank_snapshot_${userId}`;
 }
 
 function loadSnapshot(userId: string): RankSnapshot | null {
