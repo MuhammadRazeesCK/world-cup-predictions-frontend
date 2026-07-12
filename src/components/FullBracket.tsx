@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { BracketFixture, BracketData } from '../api/stats';
+import { DateTime } from 'luxon';
 
 /* ─── WC 2026 bracket match numbers ────────────────────────────── */
 // Left side: R32[arm][0,1] → R16[arm] → QF[group]
@@ -136,6 +137,11 @@ function Card({ n, data, w, projHome, projAway, style }: {
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 14 }}>
                 {live && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>● LIVE</span>}
                 {done && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>FT</span>}
+                {f && !done && !live && f.kickoff_time && (
+                    <span style={{ fontSize: 8, color: 'rgba(245,184,0,0.55)', fontWeight: 700 }}>
+                        {DateTime.fromISO(f.kickoff_time).setZone('Asia/Kolkata').toFormat('d MMM, h:mm a')}
+                    </span>
+                )}
                 {!f && (projHome || projAway) && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', fontWeight: 700 }}>upcoming</span>}
             </div>
             {teamRow(homeTeam, f?.home_score, f?.penalty_home_score, homeWon, !homeTeam ? projHome : null)}
