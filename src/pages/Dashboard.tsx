@@ -171,7 +171,7 @@ export default function Dashboard() {
       <Header />
       {user && knockoutRank && (
         <RankCelebration
-          userId={user.id ?? user.username}
+          userId={user.username}
           currentRank={knockoutRank}
           currentPoints={knockoutPts}
         />
