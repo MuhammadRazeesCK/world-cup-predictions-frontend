@@ -142,7 +142,11 @@ export function EyeIcon() {
 }
 
 /* ─── modal ───────────────────────────────────────────────────── */
-export function PlayerPredictionsModal({ username, onClose }: { username: string; onClose: () => void }) {
+export function PlayerPredictionsModal({ username, stageGroup = 'all', onClose }: {
+  username: string;
+  stageGroup?: 'all' | 'group' | 'knockout';
+  onClose: () => void;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ['predictions', 'user', username],
     queryFn: () => predictionsApi.getUserHistory(username).then((r) => r.data),
@@ -154,11 +158,18 @@ export function PlayerPredictionsModal({ username, onClose }: { username: string
     return () => { document.body.style.overflow = ''; };
   }, []);
 
+  const KNOCKOUT_STAGES = ['round32', 'round16', 'qf', 'sf', 'third_place', 'final'];
+  const filtered = data?.predictions.filter(p => {
+    if (stageGroup === 'group') return p.fixture.stage === 'group';
+    if (stageGroup === 'knockout') return KNOCKOUT_STAGES.includes(p.fixture.stage);
+    return true;
+  }) ?? [];
+
   const stats = data ? {
-    total: data.total,
-    pts: data.predictions.reduce((s, p) => s + (p.result.points ?? 0), 0),
-    exact: data.predictions.filter(p => p.result.result_type === 'exact').length,
-    correct: data.predictions.filter(p => p.result.result_type === 'winner' || p.result.result_type === 'draw_correct').length,
+    total: filtered.length,
+    pts: filtered.reduce((s, p) => s + (p.result.points ?? 0), 0),
+    exact: filtered.filter(p => p.result.result_type === 'exact').length,
+    correct: filtered.filter(p => p.result.result_type === 'winner' || p.result.result_type === 'draw_correct').length,
   } : null;
 
   return (
@@ -190,7 +201,9 @@ export function PlayerPredictionsModal({ username, onClose }: { username: string
                   @{username}
                 </h2>
                 {stats && (
-                  <p className="text-xs text-white/30 mt-0.5">{stats.total} completed predictions</p>
+                  <p className="text-xs text-white/30 mt-0.5">
+                    {stats.total} {stageGroup === 'group' ? 'group stage' : stageGroup === 'knockout' ? 'knockout' : 'completed'} predictions
+                  </p>
                 )}
               </div>
             </div>
@@ -233,10 +246,10 @@ export function PlayerPredictionsModal({ username, onClose }: { username: string
               <span className="text-white/30 text-sm">Loading…</span>
             </div>
           )}
-          {!isLoading && data?.predictions.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <p className="text-center py-12 text-white/25 text-sm">No completed predictions yet.</p>
           )}
-          {!isLoading && data?.predictions.map(item => <PredCard key={item.id} item={item} />)}
+          {!isLoading && filtered.map(item => <PredCard key={item.id} item={item} />)}
         </div>
       </div>
     </div>

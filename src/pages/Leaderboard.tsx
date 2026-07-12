@@ -301,7 +301,7 @@ export default function LeaderboardPage() {
         )}
       </main>
       <Footer />
-      {viewingUser && <PlayerPredictionsModal username={viewingUser} onClose={() => setViewingUser(null)} />}
+      {viewingUser && <PlayerPredictionsModal username={viewingUser} stageGroup={stageGroup} onClose={() => setViewingUser(null)} />}
     </div>
   );
 }
