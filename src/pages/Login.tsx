@@ -133,17 +133,6 @@ export default function Login() {
         </button>
       </form>
 
-      {/* Footer link */}
-      <p className="text-center text-sm mt-7" style={{ color: 'rgba(255,255,255,0.4)' }}>
-        No account?{' '}
-        <Link
-          to="/signup"
-          className="font-bold transition-colors hover:opacity-80"
-          style={{ color: T.gold }}
-        >
-          Join the league
-        </Link>
-      </p>
     </AuthLayout>
   );
 }
