@@ -501,11 +501,10 @@ export function MatchCard({ fixture }: MatchCardProps) {
             </div>
           </div>
           <iframe
-            src={fixture.stream_url}
+            src={`${import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'}/proxy?url=${encodeURIComponent(fixture.stream_url!)}&token=${localStorage.getItem('token') ?? ''}`}
             title="Live Stream"
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; camera; microphone; clipboard-write"
             allowFullScreen
-            // no sandbox — mobile needs allow-popups for player init
             style={{ display: 'block', width: '100%', height: '60vh', minHeight: '320px', border: 'none', background: '#000' }}
           />
         </div>
