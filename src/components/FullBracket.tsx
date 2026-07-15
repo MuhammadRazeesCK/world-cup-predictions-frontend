@@ -103,7 +103,15 @@ function projected(data: BracketData, n: number): string | null {
     return `${sh(f.home_team)} / ${sh(f.away_team)}`;
 }
 
-/* ─── card component ─────────────────────────────────────────────── */
+// Returns loser name if match done, or "Team1 / Team2" if scheduled, or null
+function projectedLoser(data: BracketData, n: number): string | null {
+    const f = get(data, n);
+    if (!f) return null;
+    const w = getWinner(data, n);
+    if (w) return w === f.home_team ? sh(f.away_team) : sh(f.home_team);
+    // Scheduled — show both potential teams (either could lose)
+    return `${sh(f.home_team)} / ${sh(f.away_team)}`;
+}
 // projHome/projAway: shown when no real fixture exists for this slot
 function Card({ n, data, w, projHome, projAway, style }: {
     n: number; data: BracketData; w: number;
@@ -298,7 +306,7 @@ export function FullBracket({ data }: { data: BracketData }) {
                     {label('R16', x.r16L, W.r16)}
                     {label('QF', x.qfL, W.qf)}
                     {label('SF', x.sfL, W.sf)}
-                    {label('🏆 Final', x.final, W.final)}
+                    {label('', x.final, W.final)}
                     {label('SF', x.sfR, W.sf)}
                     {label('QF', x.qfR, W.qf)}
                     {label('R16', x.r16R, W.r16)}
@@ -328,17 +336,24 @@ export function FullBracket({ data }: { data: BracketData }) {
                         projAway={projected(data, 58)}
                         style={{ left: x.sfL, top: sfcy - CH / 2 }} />
 
-                    {/* FINAL */}
+                    {/* FINAL — hero label above */}
+                    <div style={{ position: 'absolute', left: x.final - 20, width: W.final + 40, top: sfcy - CH / 2 - 52, textAlign: 'center' }}>
+                        <div style={{ fontSize: 22, lineHeight: 1, filter: 'drop-shadow(0 0 12px rgba(245,184,0,0.7))' }}>🏆</div>
+                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#f5b800', textShadow: '0 0 16px rgba(245,184,0,0.5)', marginTop: 2 }}>THE FINAL</div>
+                    </div>
                     <Card n={finalNum} data={data} w={W.final}
                         projHome={projected(data, sfLNum)}
                         projAway={projected(data, sfRNum)}
-                        style={{ left: x.final, top: sfcy - CH / 2 }} />
+                        style={{ left: x.final, top: sfcy - CH / 2, boxShadow: '0 0 24px rgba(245,184,0,0.18)', border: '1px solid rgba(245,184,0,0.35)' }} />
 
-                    {/* 3RD PLACE label + card */}
+                    {/* 3RD PLACE label + card — with loser propagation */}
                     <div style={{ position: 'absolute', left: x.final, top: sfcy + CH / 2 + 18, width: W.final, textAlign: 'center', fontSize: 8, color: 'rgba(255,255,255,0.28)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         3rd Place
                     </div>
-                    <Card n={thirdNum} data={data} w={W.final} style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
+                    <Card n={thirdNum} data={data} w={W.final}
+                        projHome={projectedLoser(data, sfLNum)}
+                        projAway={projectedLoser(data, sfRNum)}
+                        style={{ left: x.final, top: sfcy + CH / 2 + 34 }} />
 
                     {/* RIGHT SF */}
                     <Card n={sfRNum} data={data} w={W.sf}
