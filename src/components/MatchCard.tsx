@@ -262,6 +262,10 @@ export function MatchCard({ fixture }: MatchCardProps) {
             {/* Background glow blobs */}
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(220,38,38,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 50%, rgba(59,130,246,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
+            {/* Trophy watermark */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 0 }}>
+                <span style={{ fontSize: '11rem', lineHeight: 1, opacity: 0.055, filter: 'grayscale(0.3) sepia(0.4)', userSelect: 'none' }}>🏆</span>
+            </div>
 
             {/* THE FINAL header */}
             <div className="relative pt-5 pb-3 text-center">
