@@ -397,8 +397,8 @@ export function MatchCard({ fixture }: MatchCardProps) {
                 </div>
             </div>
 
-            {/* Prediction section */}
-            {pw && (
+            {/* Prediction section — hidden for admin */}
+            {pw && !isAdmin && (
                 <div
                     className="relative px-5 py-4"
                     style={{ borderTop: '1px solid rgba(245,184,0,0.12)', background: 'rgba(245,184,0,0.03)', zIndex: 1 }}
@@ -427,9 +427,35 @@ export function MatchCard({ fixture }: MatchCardProps) {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Penalty inputs — only when scores are level */}
+                            {isDrawPrediction && fixture.penalty_enabled && (
+                                <div className="space-y-2 pt-1">
+                                    <div className="text-center text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(245,184,0,0.5)' }}>
+                                        🥅 Penalty Shootout Winner
+                                    </div>
+                                    <div className="flex items-center justify-center gap-6">
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={() => setValue('pen_home', Math.max(0, (penHomeVal ?? 0) - 1))} className="w-8 h-8 rounded-lg text-white font-black text-lg" style={{ background: 'rgba(255,255,255,0.07)' }}>−</button>
+                                            <span className="font-black tabular-nums w-8 text-center text-2xl text-white" style={{ fontFamily: '"Bebas Neue", sans-serif' }}>{penHomeVal ?? 0}</span>
+                                            <button type="button" onClick={() => setValue('pen_home', (penHomeVal ?? 0) + 1)} className="w-8 h-8 rounded-lg text-white font-black text-lg" style={{ background: 'rgba(255,255,255,0.07)' }}>+</button>
+                                        </div>
+                                        <span className="font-black text-2xl" style={{ color: 'rgba(245,184,0,0.3)', fontFamily: '"Bebas Neue", sans-serif' }}>:</span>
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={() => setValue('pen_away', Math.max(0, (penAwayVal ?? 0) - 1))} className="w-8 h-8 rounded-lg text-white font-black text-lg" style={{ background: 'rgba(255,255,255,0.07)' }}>−</button>
+                                            <span className="font-black tabular-nums w-8 text-center text-2xl text-white" style={{ fontFamily: '"Bebas Neue", sans-serif' }}>{penAwayVal ?? 0}</span>
+                                            <button type="button" onClick={() => setValue('pen_away', (penAwayVal ?? 0) + 1)} className="w-8 h-8 rounded-lg text-white font-black text-lg" style={{ background: 'rgba(255,255,255,0.07)' }}>+</button>
+                                        </div>
+                                    </div>
+                                    {isPenDrawInvalid && (
+                                        <p className="text-center text-xs font-bold" style={{ color: '#f87171' }}>Penalties can't end in a draw</p>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between">
                                 <Countdown closesAt={fixture.prediction_closes_at} />
-                                <button type="submit" disabled={submitMutation.isPending} className="px-6 py-2 rounded-xl text-sm font-black uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #f5b800, #ff8c00)', color: '#000' }}>
+                                <button type="submit" disabled={submitMutation.isPending || isPenDrawInvalid || (isDrawPrediction && !fixture.penalty_enabled)} className="px-6 py-2 rounded-xl text-sm font-black uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #f5b800, #ff8c00)', color: '#000' }}>
                                     {submitMutation.isPending ? 'Saving…' : userPred ? 'Update' : 'Submit'}
                                 </button>
                             </div>
