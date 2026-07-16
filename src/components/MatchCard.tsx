@@ -140,6 +140,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const submitMutation = useSubmitPrediction();
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [showStream, setShowStream] = useState(false);
+  const [showPenalty, setShowPenalty] = useState(false);
   const streamViewId = useState<string | null>(null);
   const streamOpenedAt = useState<number | null>(null);
 
@@ -201,6 +202,11 @@ export function MatchCard({ fixture }: MatchCardProps) {
 
   const onSubmit = async (data: PredictionForm) => {
     setMsg(null);
+    // If knockout draw and penalty enabled — show penalty box first instead of submitting
+    if (isKnockout && data.home === data.away && fixture.penalty_enabled && !showPenalty) {
+      setShowPenalty(true);
+      return;
+    }
     try {
       const sendPen = isKnockout && data.home === data.away && fixture.penalty_enabled;
       await submitMutation.mutateAsync({
@@ -209,6 +215,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
         away: data.away,
         ...(sendPen && { pen_home: data.pen_home, pen_away: data.pen_away }),
       });
+      setShowPenalty(false);
       setMsg({ type: 'ok', text: userPred ? 'Prediction updated' : 'Prediction saved' });
       setTimeout(() => setMsg(null), 3000);
     } catch (err: any) {
@@ -221,7 +228,9 @@ export function MatchCard({ fixture }: MatchCardProps) {
   const isCompleted = status === 'completed';
   const isKnockout = fixture.stage !== 'group';
   const isDrawPrediction = isKnockout && (homeVal ?? 0) === (awayVal ?? 0);
-  const isPenDrawInvalid = isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
+  // Hide penalty box if scores become unequal after it was revealed
+  useEffect(() => { if (!isDrawPrediction) setShowPenalty(false); }, [isDrawPrediction]);
+  const isPenDrawInvalid = showPenalty && isDrawPrediction && fixture.penalty_enabled && (penHomeVal ?? 0) === (penAwayVal ?? 0);
 
   // Show stream button when live OR within 30 minutes of kickoff
   const kickoffMs = fixture.kickoff_time ? new Date(fixture.kickoff_time).getTime() : null;
@@ -429,7 +438,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                             </div>
 
                             {/* Penalty inputs — only when scores are level */}
-                            {isDrawPrediction && fixture.penalty_enabled && (
+                            {showPenalty && fixture.penalty_enabled && (
                                 <div className="space-y-2 pt-1">
                                     <div className="text-center text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(245,184,0,0.5)' }}>
                                         🥅 Penalty Shootout Winner
@@ -636,7 +645,7 @@ export function MatchCard({ fixture }: MatchCardProps) {
                 </div>
 
                 {/* Result preview pill + penalty section */}
-                {isDrawPrediction ? (
+                {showPenalty ? (
                   <div className="mb-3 space-y-3">
                     {fixture.penalty_enabled ? (
                       <>
