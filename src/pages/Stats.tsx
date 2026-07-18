@@ -15,95 +15,135 @@ function formatKickoff(iso: string) {
 /* ─── helpers ─────────────────────────────────────────────────── */
 function Skeleton() {
     return (
-        <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+                {[130, 160, 130].map((h, i) => (
+                    <div key={i} className="rounded-2xl animate-pulse" style={{ height: h, background: 'rgba(255,255,255,0.05)' }} />
+                ))}
+            </div>
+            {[1,2,3,4,5,6,7].map(i => (
+                <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
             ))}
         </div>
     );
 }
 
-/* ─── player row ──────────────────────────────────────────────── */
-function PlayerRow({ player, max, statLabel }: { player: PlayerLeader; max: number; statLabel: string }) {
-    const [headshotFailed, setHeadshotFailed] = useState(false);
-    const pct = max > 0 ? (player.value / max) * 100 : 0;
-    const isFirst = player.rank === 1;
+/* ─── player image ────────────────────────────────────────────── */
+function PlayerImg({ player, className, style }: { player: PlayerLeader; className?: string; style?: React.CSSProperties }) {
+    const [failed, setFailed] = useState(false);
+    if (player.headshotUrl && !failed) {
+        return <img src={player.headshotUrl} alt={player.name} className={className} style={style} onError={() => setFailed(true)} />;
+    }
+    if (player.flagUrl) {
+        return (
+            <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20%', ...style }}>
+                <img src={player.flagUrl} alt={player.country} style={{ width: '100%', height: 'auto', borderRadius: 3 }} />
+            </div>
+        );
+    }
+    return (
+        <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: 'rgba(255,255,255,0.2)', ...style }}>
+            {player.name.charAt(0)}
+        </div>
+    );
+}
+
+/* ─── podium card (top 3) ─────────────────────────────────────── */
+const MEDAL = ['🥇', '🥈', '🥉'];
+const MEDAL_COLORS = ['#f5b800', '#c0c0c0', '#cd7f32'];
+const MEDAL_GLOW = ['rgba(245,184,0,0.35)', 'rgba(192,192,192,0.25)', 'rgba(205,127,50,0.25)'];
+
+function PodiumCard({ player, statLabel, order }: { player: PlayerLeader; statLabel: string; order: 0|1|2 }) {
+    const color = MEDAL_COLORS[order];
+    const glow = MEDAL_GLOW[order];
+    const height = order === 0 ? 172 : 148;
 
     return (
         <div
-            className="relative flex items-center gap-3 rounded-xl px-4 py-3 overflow-hidden"
+            className="relative rounded-2xl overflow-hidden flex flex-col"
             style={{
-                background: isFirst ? 'rgba(245,184,0,0.06)' : 'rgba(255,255,255,0.03)',
-                border: isFirst ? '1px solid rgba(245,184,0,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                height,
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${color}35`,
+                boxShadow: `0 4px 20px ${glow}`,
+                order: order === 1 ? -1 : order === 0 ? 0 : 1,
             }}
         >
-            {/* Bar fill */}
-            <div
-                className="absolute inset-y-0 left-0 rounded-xl transition-all duration-700"
-                style={{
-                    width: `${pct}%`,
-                    background: isFirst
-                        ? 'rgba(245,184,0,0.07)'
-                        : 'rgba(255,255,255,0.025)',
-                }}
+            {/* Photo fills card */}
+            <PlayerImg
+                player={player}
+                className="absolute inset-0 w-full h-full"
+                style={{ objectFit: 'cover', objectPosition: 'top' }}
             />
-
-            {/* Rank */}
-            <span
-                className="relative w-6 text-center text-xs font-black flex-shrink-0"
-                style={{ color: isFirst ? '#f5b800' : 'rgba(255,255,255,0.25)' }}
-            >
-                {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
-            </span>
-
-            {/* Headshot or flag */}
-            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                {player.headshotUrl && !headshotFailed ? (
-                    <img
-                        src={player.headshotUrl}
-                        alt={player.shortName}
-                        className="w-full h-full object-cover"
-                        onError={() => setHeadshotFailed(true)}
-                    />
-                ) : player.flagUrl ? (
-                    <div className="w-full h-full flex items-center justify-center p-1.5">
-                        <img src={player.flagUrl} alt={player.country} className="w-full h-auto rounded-sm object-cover" />
-                    </div>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">
-                        {player.name.charAt(0)}
-                    </div>
-                )}
+            {/* Gradient overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.3) 55%, transparent 100%)' }} />
+            {/* Stat badge top-right */}
+            <div className="absolute top-2 right-2 text-right">
+                <div
+                    className="font-black tabular-nums leading-none"
+                    style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: '1.8rem', color, textShadow: `0 0 12px ${glow}` }}
+                >
+                    {player.value}
+                </div>
+                <div className="text-[8px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>{statLabel}</div>
             </div>
-
-            {/* Name + country */}
-            <div className="relative flex-1 min-w-0">
-                <p className="text-sm font-bold truncate" style={{ color: isFirst ? '#fff' : 'rgba(255,255,255,0.85)' }}>
+            {/* Medal top-left */}
+            <div className="absolute top-2 left-2 text-lg">{MEDAL[order]}</div>
+            {/* Name bottom */}
+            <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2.5">
+                <p className="font-black text-white text-xs leading-tight truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
                     {player.name}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-[11px] text-white/35 truncate">{player.country}</p>
-                </div>
-            </div>
-
-            {/* Value */}
-            <div className="relative text-right flex-shrink-0">
-                <span
-                    className="text-xl font-black tabular-nums"
-                    style={{
-                        fontFamily: '"Bebas Neue", sans-serif',
-                        color: isFirst ? '#f5b800' : 'rgba(255,255,255,0.9)',
-                    }}
-                >
-                    {player.displayValue.includes(',') ? player.displayValue.split(',')[1]?.trim() ?? player.displayValue : player.value}
-                </span>
-                <p className="text-[9px] text-white/25 uppercase tracking-wider">{statLabel}</p>
+                <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.5)', textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+                    {player.country}
+                </p>
             </div>
         </div>
     );
 }
 
-/* ─── stat category panel ─────────────────────────────────────── */
+/* ─── compact row (rank 4+) ───────────────────────────────────── */
+function CompactRow({ player, max, statLabel }: { player: PlayerLeader; max: number; statLabel: string }) {
+    const [failed, setFailed] = useState(false);
+    const pct = max > 0 ? Math.round((player.value / max) * 100) : 0;
+
+    return (
+        <div className="flex items-center gap-3 py-2.5 px-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            {/* Rank */}
+            <span className="text-xs font-black w-5 text-center flex-shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                {player.rank}
+            </span>
+
+            {/* Tiny avatar */}
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                {player.headshotUrl && !failed ? (
+                    <img src={player.headshotUrl} alt="" className="w-full h-full object-cover object-top" onError={() => setFailed(true)} />
+                ) : player.flagUrl ? (
+                    <div className="w-full h-full flex items-center justify-center p-1">
+                        <img src={player.flagUrl} alt="" className="w-full h-auto rounded-sm" />
+                    </div>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-white/20">{player.name.charAt(0)}</div>
+                )}
+            </div>
+
+            {/* Name + bar */}
+            <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold truncate" style={{ color: 'rgba(255,255,255,0.85)' }}>{player.name}</span>
+                    <span className="text-xs font-black flex-shrink-0" style={{ color: 'rgba(255,255,255,0.7)', fontFamily: '"Bebas Neue", sans-serif' }}>
+                        {player.value} <span className="text-[9px] font-normal" style={{ color: 'rgba(255,255,255,0.25)' }}>{statLabel}</span>
+                    </span>
+                </div>
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: 'rgba(255,255,255,0.25)' }} />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─── full category view ──────────────────────────────────────── */
 function CategoryPanel({ cat }: { cat: StatCategory }) {
     const max = cat.leaders[0]?.value ?? 1;
     const statLabel = cat.name === 'goals' ? 'goals'
@@ -115,11 +155,36 @@ function CategoryPanel({ cat }: { cat: StatCategory }) {
         : cat.name === 'saves' ? 'saves'
         : 'value';
 
+    const top3 = cat.leaders.slice(0, 3);
+    const rest = cat.leaders.slice(3);
+
+    // Podium order: 2nd (left), 1st (center, tallest), 3rd (right)
+    const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+
     return (
-        <div className="space-y-2">
-            {cat.leaders.map((p) => (
-                <PlayerRow key={`${p.name}-${p.rank}`} player={p} max={max} statLabel={statLabel} />
-            ))}
+        <div className="space-y-4">
+            {/* Podium */}
+            {top3.length > 0 && (
+                <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                    {podiumOrder.map((p, i) => {
+                        const realOrder = p.rank === 1 ? 0 : p.rank === 2 ? 1 : 2;
+                        return (
+                            <PodiumCard key={p.name} player={p} statLabel={statLabel} order={realOrder as 0|1|2} />
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Rest */}
+            {rest.length > 0 && (
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="px-3">
+                        {rest.map((p) => (
+                            <CompactRow key={p.name} player={p} max={max} statLabel={statLabel} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
