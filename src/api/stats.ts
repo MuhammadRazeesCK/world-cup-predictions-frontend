@@ -9,6 +9,7 @@ export interface PlayerLeader {
     country: string;
     flagUrl: string | null;
     headshotUrl: string | null;
+    cropY: number;
 }
 
 export interface StatCategory {

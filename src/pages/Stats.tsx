@@ -31,8 +31,9 @@ function Skeleton() {
 /* ─── player image ────────────────────────────────────────────── */
 function PlayerImg({ player, className, style }: { player: PlayerLeader; className?: string; style?: React.CSSProperties }) {
     const [failed, setFailed] = useState(false);
+    const cropPos = `center ${player.cropY ?? 15}%`;
     if (player.headshotUrl && !failed) {
-        return <img src={player.headshotUrl} alt={player.name} className={className} style={style} onError={() => setFailed(true)} />;
+        return <img src={player.headshotUrl} alt={player.name} className={className} style={{ objectPosition: cropPos, ...style }} onError={() => setFailed(true)} />;
     }
     if (player.flagUrl) {
         return (
@@ -117,7 +118,7 @@ function CompactRow({ player, max, statLabel }: { player: PlayerLeader; max: num
             {/* Tiny avatar */}
             <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 {player.headshotUrl && !failed ? (
-                    <img src={player.headshotUrl} alt="" className="w-full h-full object-cover object-top" onError={() => setFailed(true)} />
+                    <img src={player.headshotUrl} alt="" className="w-full h-full object-cover" style={{ objectPosition: `center ${player.cropY ?? 15}%` }} onError={() => setFailed(true)} />
                 ) : player.flagUrl ? (
                     <div className="w-full h-full flex items-center justify-center p-1">
                         <img src={player.flagUrl} alt="" className="w-full h-auto rounded-sm" />

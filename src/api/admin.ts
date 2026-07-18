@@ -158,8 +158,8 @@ export const adminApi = {
         return data.data;
     },
 
-    setPlayerPhoto: async (player_name: string, photo_url: string): Promise<void> => {
-        await apiClient.put('/admin/player-photos', { player_name, photo_url });
+    setPlayerPhoto: async (player_name: string, photo_url: string, crop_y = 15): Promise<void> => {
+        await apiClient.put('/admin/player-photos', { player_name, photo_url, crop_y });
     },
 
     deletePlayerPhoto: async (player_name: string): Promise<void> => {

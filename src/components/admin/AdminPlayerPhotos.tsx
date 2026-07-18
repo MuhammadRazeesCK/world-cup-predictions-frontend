@@ -8,6 +8,7 @@ export function AdminPlayerPhotos() {
     const [search, setSearch] = useState('');
     const [editingName, setEditingName] = useState<string | null>(null);
     const [draftUrl, setDraftUrl] = useState('');
+    const [draftCropY, setDraftCropY] = useState(15);
     const [newName, setNewName] = useState('');
     const [newUrl, setNewUrl] = useState('');
     const [msg, setMsg] = useState('');
@@ -25,8 +26,8 @@ export function AdminPlayerPhotos() {
     });
 
     const saveMutation = useMutation({
-        mutationFn: ({ name, url }: { name: string; url: string }) =>
-            adminApi.setPlayerPhoto(name, url),
+        mutationFn: ({ name, url, cropY }: { name: string; url: string; cropY?: number }) =>
+            adminApi.setPlayerPhoto(name, url, cropY),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin-player-photos'] });
             setEditingName(null);
@@ -125,26 +126,30 @@ export function AdminPlayerPhotos() {
                                     <p className="text-sm font-semibold text-white truncate">{p.name}</p>
                                     <p className="text-xs text-text-secondary">{p.country}</p>
                                     {isEditing && (
-                                        <div className="flex gap-2 mt-2">
-                                            <input
-                                                className="input text-xs flex-1"
-                                                placeholder="Photo URL"
-                                                value={draftUrl}
-                                                onChange={e => setDraftUrl(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter' && draftUrl.trim()) {
-                                                        saveMutation.mutate({ name: p.name, url: draftUrl.trim() });
-                                                    }
-                                                    if (e.key === 'Escape') setEditingName(null);
-                                                }}
-                                                autoFocus
-                                            />
-                                            <button
-                                                onClick={() => draftUrl.trim() && saveMutation.mutate({ name: p.name, url: draftUrl.trim() })}
-                                                className="text-xs px-2 py-1 rounded font-bold"
-                                                style={{ background: '#f5b800', color: '#000' }}
-                                            >Save</button>
-                                            <button onClick={() => setEditingName(null)} className="text-xs px-2 py-1 rounded text-white/40">✕</button>
+                                        <div className="space-y-2 mt-2">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    className="input text-xs flex-1"
+                                                    placeholder="Photo URL"
+                                                    value={draftUrl}
+                                                    onChange={e => setDraftUrl(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Escape') setEditingName(null);
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => draftUrl.trim() && saveMutation.mutate({ name: p.name, url: draftUrl.trim(), cropY: draftCropY })}
+                                                    className="text-xs px-2 py-1 rounded font-bold"
+                                                    style={{ background: '#f5b800', color: '#000' }}
+                                                >Save</button>
+                                                <button onClick={() => setEditingName(null)} className="text-xs px-2 py-1 rounded text-white/40">✕</button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] text-white/40 flex-shrink-0">Face pos: {draftCropY}%</span>
+                                                <input type="range" min={0} max={80} value={draftCropY} onChange={e => setDraftCropY(Number(e.target.value))} className="flex-1" style={{ accentColor: '#f5b800' }} />
+                                                {draftUrl && <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0" style={{ background: '#111' }}><img src={draftUrl} alt="" className="w-full h-full object-cover" style={{ objectPosition: `center ${draftCropY}%` }} /></div>}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -156,7 +161,7 @@ export function AdminPlayerPhotos() {
                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>no photo</span>
                                     )}
                                     <button
-                                        onClick={() => { setEditingName(p.name); setDraftUrl(url ?? ''); }}
+                                        onClick={() => { setEditingName(p.name); setDraftUrl(url ?? ''); setDraftCropY((saved.find(r => r.player_name === p.name) as any)?.crop_y ?? 15); }}
                                         className="text-xs text-accent hover:underline"
                                     >
                                         {url ? 'Edit' : 'Add'}
