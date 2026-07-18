@@ -54,9 +54,13 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children }: AuthLayoutProps) {
-  const heroBgStyle: React.CSSProperties = T.heroImage
+  // Dev override: paste any image URL in the input below the login form to preview it
+  const overrideUrl = typeof window !== 'undefined' ? localStorage.getItem('hero_image_preview') : null;
+  const heroSrc = overrideUrl || T.heroImage;
+
+  const heroBgStyle: React.CSSProperties = heroSrc
     ? {
-        backgroundImage: `url(${T.heroImage})`,
+        backgroundImage: `url(${heroSrc})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center 15%',
       }
@@ -165,6 +169,38 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <div className="w-full max-w-sm flex-1 flex flex-col justify-center px-6 py-8">
           {children}
         </div>
+        {/* ── Image preview tool (local dev only) ── */}
+        <HeroImagePicker currentUrl={heroSrc} />
+      </div>
+    </div>
+  );
+}
+
+function HeroImagePicker({ currentUrl }: { currentUrl: string | null }) {
+  const [val, setVal] = React.useState(currentUrl ?? '');
+  const apply = () => {
+    if (val.trim()) { localStorage.setItem('hero_image_preview', val.trim()); window.location.reload(); }
+    else { localStorage.removeItem('hero_image_preview'); window.location.reload(); }
+  };
+  return (
+    <div style={{ width: '100%', padding: '12px 20px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 8 }}>
+        🖼 Hero Image Preview
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && apply()}
+          placeholder="Paste any image URL and press Enter…"
+          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '7px 10px', fontSize: 11, color: 'rgba(255,255,255,0.7)', outline: 'none' }}
+        />
+        <button onClick={apply} style={{ padding: '7px 14px', borderRadius: 8, background: 'rgba(245,184,0,0.85)', color: '#000', fontWeight: 900, fontSize: 11, cursor: 'pointer', border: 'none' }}>
+          Apply
+        </button>
+        <button onClick={() => { localStorage.removeItem('hero_image_preview'); setVal(''); window.location.reload(); }} style={{ padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)', fontSize: 11, cursor: 'pointer', border: 'none' }}>
+          Reset
+        </button>
       </div>
     </div>
   );
