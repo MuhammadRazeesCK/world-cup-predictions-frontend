@@ -155,29 +155,84 @@ function CategoryPanel({ cat }: { cat: StatCategory }) {
         : cat.name === 'saves' ? 'saves'
         : 'value';
 
-    const top3 = cat.leaders.slice(0, 3);
+    const [p1, p2, p3] = cat.leaders;
     const rest = cat.leaders.slice(3);
 
-    // Podium order: 2nd (left), 1st (center, tallest), 3rd (right)
-    const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-
     return (
-        <div className="space-y-4">
-            {/* Podium */}
-            {top3.length > 0 && (
-                <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                    {podiumOrder.map((p, i) => {
-                        const realOrder = p.rank === 1 ? 0 : p.rank === 2 ? 1 : 2;
-                        return (
-                            <PodiumCard key={p.name} player={p} statLabel={statLabel} order={realOrder as 0|1|2} />
-                        );
-                    })}
+        <div className="space-y-3">
+            {/* Podium — #1 large left, #2+#3 stacked right */}
+            {p1 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gridTemplateRows: 'auto auto', gap: 8 }}>
+                    {/* #1 — hero card, spans both rows */}
+                    <div
+                        className="relative rounded-2xl overflow-hidden"
+                        style={{ gridRow: '1 / 3', height: 230, border: '1.5px solid rgba(245,184,0,0.5)', boxShadow: '0 0 32px rgba(245,184,0,0.2), inset 0 0 40px rgba(245,184,0,0.04)' }}
+                    >
+                        <PlayerImg player={p1} className="absolute inset-0 w-full h-full" style={{ objectFit: 'cover', objectPosition: 'top' }} />
+                        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)' }} />
+                        {/* Gold accent bar */}
+                        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#f5b800,#ff8c00)' }} />
+                        {/* Medal */}
+                        <div className="absolute top-3 left-3 text-2xl">🥇</div>
+                        {/* Stat number */}
+                        <div className="absolute top-2 right-3 text-right">
+                            <div style={{ fontFamily:'"Bebas Neue",sans-serif', fontSize:'3rem', lineHeight:1, color:'#f5b800', textShadow:'0 0 20px rgba(245,184,0,0.6)' }}>
+                                {p1.value}
+                            </div>
+                            <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', color:'rgba(255,255,255,0.4)' }}>{statLabel}</div>
+                        </div>
+                        {/* Name */}
+                        <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
+                            <p style={{ fontFamily:'"Bebas Neue",sans-serif', fontSize:'1.25rem', letterSpacing:'0.04em', color:'#fff', textShadow:'0 1px 6px rgba(0,0,0,0.9)', lineHeight:1.1 }}>
+                                {p1.name}
+                            </p>
+                            <p style={{ fontSize:11, color:'rgba(255,255,255,0.5)', textShadow:'0 1px 4px rgba(0,0,0,0.9)', marginTop:2 }}>{p1.country}</p>
+                        </div>
+                    </div>
+
+                    {/* #2 */}
+                    {p2 && (
+                        <div
+                            className="relative rounded-2xl overflow-hidden"
+                            style={{ height: 111, border:'1px solid rgba(192,192,192,0.25)', boxShadow:'0 2px 12px rgba(192,192,192,0.1)' }}
+                        >
+                            <PlayerImg player={p2} className="absolute inset-0 w-full h-full" style={{ objectFit:'cover', objectPosition:'top' }} />
+                            <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }} />
+                            <div className="absolute top-2 left-2 text-base">🥈</div>
+                            <div className="absolute top-1.5 right-2 text-right">
+                                <div style={{ fontFamily:'"Bebas Neue",sans-serif', fontSize:'1.8rem', lineHeight:1, color:'#c0c0c0' }}>{p2.value}</div>
+                                <div style={{ fontSize:8, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.35)' }}>{statLabel}</div>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
+                                <p style={{ fontSize:11, fontWeight:800, color:'#fff', textShadow:'0 1px 4px rgba(0,0,0,0.9)', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p2.name}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* #3 */}
+                    {p3 && (
+                        <div
+                            className="relative rounded-2xl overflow-hidden"
+                            style={{ height: 111, border:'1px solid rgba(205,127,50,0.25)', boxShadow:'0 2px 12px rgba(205,127,50,0.08)' }}
+                        >
+                            <PlayerImg player={p3} className="absolute inset-0 w-full h-full" style={{ objectFit:'cover', objectPosition:'top' }} />
+                            <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }} />
+                            <div className="absolute top-2 left-2 text-base">🥉</div>
+                            <div className="absolute top-1.5 right-2 text-right">
+                                <div style={{ fontFamily:'"Bebas Neue",sans-serif', fontSize:'1.8rem', lineHeight:1, color:'#cd7f32' }}>{p3.value}</div>
+                                <div style={{ fontSize:8, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.35)' }}>{statLabel}</div>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
+                                <p style={{ fontSize:11, fontWeight:800, color:'#fff', textShadow:'0 1px 4px rgba(0,0,0,0.9)', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p3.name}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Rest */}
+            {/* #4–10 compact rows */}
             {rest.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="rounded-xl overflow-hidden" style={{ background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
                     <div className="px-3">
                         {rest.map((p) => (
                             <CompactRow key={p.name} player={p} max={max} statLabel={statLabel} />
