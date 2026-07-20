@@ -14,6 +14,7 @@ import { PendingReminderExport } from '../../components/export/PendingReminderCa
 import AdminMonitoring from './AdminMonitoring';
 import { AdminPolls } from '../../components/admin/AdminPolls';
 import { AdminPlayerPhotos } from '../../components/admin/AdminPlayerPhotos';
+import { AdminWrapUp } from '../../components/admin/AdminWrapUp';
 
 // Common timezone offsets for WC 2026 host cities + India
 const TIMEZONES = [
@@ -1149,7 +1150,7 @@ function AnnouncementManager() {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'announce' | 'logs' | 'monitoring' | 'polls' | 'player-photos'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'create' | 'fixtures' | 'users' | 'predictions' | 'export' | 'announce' | 'logs' | 'monitoring' | 'polls' | 'player-photos' | 'wrapup'>('upload');
 
   const tabs = [
     { key: 'upload', label: '📤 Upload CSV' },
@@ -1163,6 +1164,7 @@ export default function AdminDashboard() {
     { key: 'monitoring', label: '📡 Monitoring' },
     { key: 'polls', label: '🗳️ Polls' },
     { key: 'player-photos', label: '📸 Player Photos' },
+    { key: 'wrapup', label: '🏆 Wrap Up' },
   ] as const;
 
   return (
@@ -1201,6 +1203,7 @@ export default function AdminDashboard() {
         {activeTab === 'monitoring' && <AdminMonitoring />}
         {activeTab === 'polls' && <AdminPolls />}
         {activeTab === 'player-photos' && <AdminPlayerPhotos />}
+        {activeTab === 'wrapup' && <AdminWrapUp />}
       </main>
     </div>
   );

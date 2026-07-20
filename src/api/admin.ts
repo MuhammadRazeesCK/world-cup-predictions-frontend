@@ -165,4 +165,9 @@ export const adminApi = {
     deletePlayerPhoto: async (player_name: string): Promise<void> => {
         await apiClient.delete(`/admin/player-photos/${encodeURIComponent(player_name)}`);
     },
+
+    getWrapup: async (): Promise<any> => {
+        const { data } = await apiClient.get('/admin/wrapup');
+        return data.data;
+    },
 };
