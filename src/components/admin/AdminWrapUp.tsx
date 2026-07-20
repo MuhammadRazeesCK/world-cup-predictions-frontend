@@ -151,9 +151,9 @@ function WrapUpExportCard({ cardRef, data }: { cardRef: React.RefObject<HTMLDivE
             </div>
 
             {/* Leaderboard header */}
-            <div style={{ padding: '14px 40px 8px', display: 'grid', gridTemplateColumns: '44px 32px 1fr 64px 56px 56px 72px 72px', gap: 0, alignItems: 'center' }}>
-                {['', '', 'Player', 'Points', 'Exact', 'Winner', 'Accuracy', 'Streak'].map((h, i) => (
-                    <div key={i} style={{ fontSize: 9, fontWeight: 800, color: D.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: i >= 3 ? 'center' : 'left' }}>{h}</div>
+            <div style={{ padding: '14px 40px 8px', display: 'grid', gridTemplateColumns: '44px 32px 1fr 64px 52px 52px 52px 68px 64px', gap: 0, alignItems: 'center' }}>
+                {['', '', 'Player', 'Points', 'Exact', 'Winner', 'Wrong', 'Accuracy', 'Streak'].map((h, i) => (
+                    <div key={i} style={{ fontSize: 9, fontWeight: 800, color: i === 6 ? D.red : D.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: i >= 3 ? 'center' : 'left' }}>{h}</div>
                 ))}
             </div>
             <div style={{ height: 1, background: D.border, marginInline: 40 }} />
@@ -161,13 +161,14 @@ function WrapUpExportCard({ cardRef, data }: { cardRef: React.RefObject<HTMLDivE
             {/* Leaderboard rows */}
             <div style={{ padding: '0 40px 8px' }}>
                 {leaderboard.map((p: any, i: number) => (
-                    <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '44px 32px 1fr 64px 56px 56px 72px 72px', gap: 0, alignItems: 'center', padding: '8px 0', borderBottom: i < leaderboard.length - 1 ? `1px solid ${D.border}` : 'none' }}>
+                    <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '44px 32px 1fr 64px 52px 52px 52px 68px 64px', gap: 0, alignItems: 'center', padding: '8px 0', borderBottom: i < leaderboard.length - 1 ? `1px solid ${D.border}` : 'none' }}>
                         <div style={{ fontSize: p.rank <= 3 ? 16 : 11, fontWeight: 700, color: rankColor(p.rank), textAlign: 'left' }}>{rankLabel(p.rank)}</div>
                         <ExportAvatar name={p.username} size={26} />
                         <div style={{ fontSize: 13, fontWeight: 600, color: D.text, paddingLeft: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.username}</div>
                         <div style={{ fontSize: 15, fontWeight: 900, color: D.gold, textAlign: 'center' }}>{p.total_points}</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: D.textDim, textAlign: 'center' }}>{p.exact_predictions}</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: D.textDim, textAlign: 'center' }}>{p.winner_predictions}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: D.red, textAlign: 'center' }}>{p.wrong_predictions}</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: p.accuracy_percentage >= 70 ? D.green : D.textDim, textAlign: 'center' }}>{p.accuracy_percentage}%</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: D.green, textAlign: 'center' }}>{p.max_success_streak}</div>
                     </div>
@@ -351,7 +352,7 @@ export function AdminWrapUp() {
                                 </div>
                             </div>
                             {/* Breakdown */}
-                            <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                            <div className="mt-3 grid grid-cols-5 gap-2 text-center">
                                 <div>
                                     <div className="text-text-primary font-semibold text-sm">{p.exact_predictions}</div>
                                     <div className="text-text-muted text-xs">Exact</div>
@@ -359,6 +360,10 @@ export function AdminWrapUp() {
                                 <div>
                                     <div className="text-text-primary font-semibold text-sm">{p.winner_predictions}</div>
                                     <div className="text-text-muted text-xs">Winner</div>
+                                </div>
+                                <div>
+                                    <div className="text-red-400 font-semibold text-sm">{p.wrong_predictions}</div>
+                                    <div className="text-text-muted text-xs">Wrong</div>
                                 </div>
                                 <div>
                                     <div className="text-green-400 font-semibold text-sm">{p.max_success_streak}</div>
