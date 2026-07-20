@@ -187,6 +187,8 @@ function WrapUpExportCard({ cardRef, data }: { cardRef: React.RefObject<HTMLDivE
 export function AdminWrapUp() {
     const exportRef = useRef<HTMLDivElement>(null);
     const [exporting, setExporting] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['admin', 'wrapup'],
@@ -202,13 +204,35 @@ export function AdminWrapUp() {
         setExporting(true);
         try {
             const url = await toPng(exportRef.current, { pixelRatio: 2 });
-            const a = document.createElement('a');
-            a.download = 'wc2026-wrapup.png';
-            a.href = url;
-            a.click();
+            setPreviewUrl(url);
         } finally {
             setExporting(false);
         }
+    }
+
+    async function handleCopyToClipboard() {
+        if (!previewUrl) return;
+        try {
+            const res = await fetch(previewUrl);
+            const blob = await res.blob();
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Fallback: just download
+            const a = document.createElement('a');
+            a.download = 'wc2026-wrapup.png';
+            a.href = previewUrl;
+            a.click();
+        }
+    }
+
+    function handleDownload() {
+        if (!previewUrl) return;
+        const a = document.createElement('a');
+        a.download = 'wc2026-wrapup.png';
+        a.href = previewUrl;
+        a.click();
     }
 
     const { summary, leaderboard, records, fixture_highlights, knockout_results } = data;
@@ -297,32 +321,7 @@ export function AdminWrapUp() {
                 </section>
             )}
 
-            {/* Knockout bracket */}
-            <section>
-                <h3 className="text-text-muted text-xs uppercase tracking-widest mb-3">Knockout Stage Results</h3>
-                <div className="space-y-4">
-                    {STAGE_ORDER.filter((s) => byStage[s]?.length > 0).map((stage) => (
-                        <div key={stage}>
-                            <div className="text-text-secondary text-xs font-semibold uppercase tracking-wide mb-2">{STAGE_LABELS[stage]}</div>
-                            <div className="space-y-2">
-                                {byStage[stage].map((f: any) => (
-                                    <div key={f.match_number} className="bg-surface border border-slate-700 rounded-xl p-3">
-                                        <ScoreBadge
-                                            home={f.home_score}
-                                            away={f.away_score}
-                                            penHome={f.penalty_home_score}
-                                            penAway={f.penalty_away_score}
-                                            winner={f.winner}
-                                            homeTeam={f.home_team}
-                                            awayTeam={f.away_team}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            {/* Knockout bracket — removed from screen view */}
 
             {/* Full leaderboard */}
             <section>
@@ -386,9 +385,38 @@ export function AdminWrapUp() {
                     disabled={exporting}
                     className="px-6 py-3 bg-accent text-white rounded-xl font-semibold text-sm hover:bg-accent/80 transition-colors disabled:opacity-60"
                 >
-                    {exporting ? 'Generating...' : '📸 Export as Image'}
+                    {exporting ? 'Generating...' : '📸 Preview & Export Image'}
                 </button>
             </div>
+
+            {/* Preview modal */}
+            {previewUrl && (
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+                    <div className="bg-surface border border-slate-700 rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                            <span className="font-semibold text-text-primary text-sm">Export Preview</span>
+                            <button onClick={() => setPreviewUrl(null)} className="text-text-muted hover:text-text-primary text-lg leading-none">✕</button>
+                        </div>
+                        <div className="p-4 overflow-auto max-h-[60vh]">
+                            <img src={previewUrl} alt="Wrap-up export" className="w-full rounded-lg" />
+                        </div>
+                        <div className="p-4 border-t border-slate-700 flex gap-3 justify-end">
+                            <button
+                                onClick={handleCopyToClipboard}
+                                className="px-5 py-2.5 bg-surface border border-slate-600 text-text-primary rounded-xl text-sm font-medium hover:border-accent transition-colors"
+                            >
+                                {copied ? '✅ Copied!' : '📋 Copy to Clipboard'}
+                            </button>
+                            <button
+                                onClick={handleDownload}
+                                className="px-5 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/80 transition-colors"
+                            >
+                                ⬇️ Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hidden export card — rendered off-screen for toPng */}
             <div style={{ position: 'fixed', top: 0, left: '-9999px', zIndex: -1 }}>
